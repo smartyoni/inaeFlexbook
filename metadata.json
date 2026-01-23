@@ -1,0 +1,7 @@
+{
+  "name": "FlexBook",
+  "description": "A professional household account book (가계부) with real-time tracking, statistics, and project management.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
