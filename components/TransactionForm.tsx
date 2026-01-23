@@ -64,10 +64,11 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSave, init
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        // 에러 발생 시에도 폼 표시
       }
     };
     fetchData();
-  }, [type, category, paymentMethodId]);
+  }, [type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
