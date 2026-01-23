@@ -65,6 +65,40 @@ const Household: React.FC = () => {
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
   const balance = totalIncome - totalExpense;
 
+  // Group transactions by date
+  const groupedTransactions = transactions.reduce((groups: Record<string, typeof transactions>, transaction) => {
+    // Handle both string and Firestore Timestamp formats
+    let dateStr = transaction.date;
+    if (typeof transaction.date === 'string') {
+      dateStr = transaction.date;
+    } else if (transaction.date && typeof transaction.date === 'object' && 'toDate' in transaction.date) {
+      dateStr = (transaction.date as any).toDate().toISOString();
+    }
+    const dateKey = dateStr.split('T')[0]; // YYYY-MM-DD format
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+    groups[dateKey].push(transaction);
+    return groups;
+  }, {});
+
+  // Helper to convert Firestore Timestamp to Date
+  const getDate = (date: any): Date => {
+    if (typeof date === 'string') {
+      return new Date(date);
+    } else if (date && typeof date === 'object' && 'toDate' in date) {
+      return (date as any).toDate();
+    }
+    return new Date(date);
+  };
+
+  // Calculate daily income and expense
+  const getDailyStats = (dayTransactions: typeof transactions) => {
+    const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    return { income, expense };
+  };
+
   const handleDelete = async (id: string) => {
     if (confirm('정말 삭제하시겠습니까?')) {
       try {
@@ -145,64 +179,109 @@ const Household: React.FC = () => {
         </button>
       </section>
 
-      {/* Transaction List */}
-      <section className="space-y-4">
+      {/* Transaction List by Date */}
+      <section className="space-y-6">
         {transactions.length === 0 ? (
           <div className="py-20 flex flex-col items-center text-slate-300">
             <Search size={48} className="mb-4 opacity-20" />
             <p className="font-bold">기록된 거래 내역이 없습니다</p>
           </div>
         ) : (
-          transactions.map((transaction) => {
-            const category = categories[transaction.category];
-            const paymentMethod = transaction.paymentMethodId ? paymentMethods[transaction.paymentMethodId] : null;
-            return (
-              <div 
-                key={transaction.id} 
-                className="group bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between transition-all hover:shadow-md hover:border-indigo-100"
-              >
-                <div className="flex items-center gap-4">
-                  <div 
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm"
-                    style={{ backgroundColor: category?.color || '#cbd5e1' }}
-                  >
-                    <span className="font-black text-xs">{category?.name?.[0] || 'T'}</span>
+          Object.entries(groupedTransactions)
+            .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+            .map(([date, dayTransactions]) => {
+              const dailyStats = getDailyStats(dayTransactions);
+              const displayDate = new Date(date + 'T00:00:00').toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short'
+              });
+              return (
+                <div key={date}>
+                  {/* Date Header */}
+                  <div className="px-2 mb-3">
+                    <h3 className="text-sm font-bold text-slate-700">{displayDate}</h3>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800">{transaction.description}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{category?.name}</span>
-                      <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                      {paymentMethod && (
-                        <>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-md text-white font-bold uppercase tracking-tight" style={{ backgroundColor: paymentMethod.color }}>
-                            {paymentMethod.name}
-                          </span>
-                          <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                        </>
-                      )}
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                        {new Date(transaction.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                      </span>
+
+                  {/* Daily Transactions */}
+                  <div className="space-y-2 mb-3">
+                    {dayTransactions.map((transaction) => {
+                      const category = categories[transaction.category];
+                      const paymentMethod = transaction.paymentMethodId ? paymentMethods[transaction.paymentMethodId] : null;
+                      return (
+                        <div
+                          key={transaction.id}
+                          className="group bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between transition-all hover:shadow-md hover:border-indigo-100"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div
+                              className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm"
+                              style={{ backgroundColor: category?.color || '#cbd5e1' }}
+                            >
+                              <span className="font-black text-xs">{category?.name?.[0] || 'T'}</span>
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-slate-800">{transaction.description}</h3>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{category?.name}</span>
+                                <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                                {paymentMethod && (
+                                  <>
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-md text-white font-bold uppercase tracking-tight" style={{ backgroundColor: paymentMethod.color }}>
+                                      {paymentMethod.name}
+                                    </span>
+                                    <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                                  </>
+                                )}
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                  {getDate(transaction.date).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className={`font-black text-lg ${transaction.type === 'income' ? 'text-emerald-500' : 'text-slate-800'}`}>
+                              {transaction.type === 'income' ? '+' : '-'} ₩{transaction.amount.toLocaleString()}
+                            </span>
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => { setEditingTransaction(transaction); setIsFormOpen(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+                                <Edit2 size={14} />
+                              </button>
+                              <button onClick={() => handleDelete(transaction.id)} className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Daily Summary */}
+                  <div className="px-2 py-3 bg-gradient-to-r from-emerald-50 to-rose-50 rounded-xl border border-slate-100">
+                    <div className="flex justify-between items-center text-sm">
+                      <div className="flex gap-6">
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">수입</span>
+                          <span className="text-lg font-black text-emerald-600">+₩{dailyStats.income.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">지출</span>
+                          <span className="text-lg font-black text-rose-600">-₩{dailyStats.expense.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">일 합계</span>
+                        <span className={`text-lg font-black ${dailyStats.income - dailyStats.expense >= 0 ? 'text-indigo-600' : 'text-slate-800'}`}>
+                          ₩{(dailyStats.income - dailyStats.expense).toLocaleString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className={`font-black text-lg ${transaction.type === 'income' ? 'text-emerald-500' : 'text-slate-800'}`}>
-                    {transaction.type === 'income' ? '+' : '-'} ₩{transaction.amount.toLocaleString()}
-                  </span>
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => { setEditingTransaction(transaction); setIsFormOpen(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
-                      <Edit2 size={14} />
-                    </button>
-                    <button onClick={() => handleDelete(transaction.id)} className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })
+              );
+            })
         )}
       </section>
 

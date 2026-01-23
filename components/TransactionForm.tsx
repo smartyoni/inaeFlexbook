@@ -4,7 +4,7 @@ import { X, Calendar, Wallet, Tag, FileText, Check, CreditCard } from 'lucide-re
 import { db } from '../firebase';
 import { Category, Project, TransactionType, Transaction, PaymentMethod } from '../types';
 import * as firestoreService from '../firestore-service';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 
 interface TransactionFormProps {
   onClose: () => void;
@@ -12,14 +12,25 @@ interface TransactionFormProps {
   initialData?: Transaction;
 }
 
+const getDateString = (date: any): string => {
+  if (!date) return new Date().toISOString().split('T')[0];
+  if (typeof date === 'string') {
+    return date.split('T')[0];
+  }
+  if (typeof date === 'object' && 'toDate' in date) {
+    return (date as any).toDate().toISOString().split('T')[0];
+  }
+  return new Date(date).toISOString().split('T')[0];
+};
+
 const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSave, initialData }) => {
   const [type, setType] = useState<TransactionType>(initialData?.type || 'expense');
-  const [amount, setAmount] = useState<string>(initialData?.amount.toString() || '');
+  const [amount, setAmount] = useState<string>(initialData?.amount ? String(initialData.amount) : '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [category, setCategory] = useState(initialData?.category || '');
   const [paymentMethodId, setPaymentMethodId] = useState(initialData?.paymentMethodId || '');
   const [projectId, setProjectId] = useState(initialData?.projectId || '');
-  const [date, setDate] = useState(initialData?.date.split('T')[0] || new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getDateString(initialData?.date));
   const [memo, setMemo] = useState(initialData?.memo || '');
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -32,18 +43,22 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSave, init
         // Fetch categories by type
         const q1 = query(collection(db, 'categories'), where('type', '==', type));
         const catDocs = await getDocs(q1);
-        const cats = catDocs.docs.map(doc => ({
-          ...doc.data(),
-          id: doc.id
-        } as Category));
+        const cats = catDocs.docs
+          .map(doc => ({
+            ...doc.data(),
+            id: doc.id
+          } as Category))
+          .sort((a, b) => a.order - b.order);
 
         // Fetch payment methods by type
         const q2 = query(collection(db, 'paymentMethods'), where('type', '==', type));
         const payDocs = await getDocs(q2);
-        const pays = payDocs.docs.map(doc => ({
-          ...doc.data(),
-          id: doc.id
-        } as PaymentMethod));
+        const pays = payDocs.docs
+          .map(doc => ({
+            ...doc.data(),
+            id: doc.id
+          } as PaymentMethod))
+          .sort((a, b) => a.order - b.order);
 
         // Fetch active projects
         const projs = await firestoreService.getAllProjects();
@@ -74,6 +89,15 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSave, init
     e.preventDefault();
     if (!amount || !description || !category) return;
 
+    const getCreatedAt = (): string => {
+      if (!initialData?.createdAt) return new Date().toISOString();
+      if (typeof initialData.createdAt === 'string') return initialData.createdAt;
+      if (typeof initialData.createdAt === 'object' && 'toDate' in initialData.createdAt) {
+        return (initialData.createdAt as any).toDate().toISOString();
+      }
+      return new Date().toISOString();
+    };
+
     const transactionData: Transaction = {
       id: initialData?.id || crypto.randomUUID(),
       type,
@@ -84,7 +108,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSave, init
       projectId: projectId || null,
       date: new Date(date).toISOString(),
       memo,
-      createdAt: initialData?.createdAt || new Date().toISOString(),
+      createdAt: getCreatedAt(),
       updatedAt: new Date().toISOString(),
     };
 

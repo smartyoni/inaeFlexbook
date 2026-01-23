@@ -19,7 +19,8 @@ const CategoryManagement: React.FC = () => {
   const fetchCategories = async () => {
     try {
       const cats = await firestoreService.getAllCategories();
-      setCategories(cats.sort((a, b) => a.order - b.order));
+      // Already sorted by order in firestore-service
+      setCategories(cats);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }

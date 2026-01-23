@@ -18,7 +18,8 @@ const PaymentMethodManagement: React.FC = () => {
   const fetchMethods = async () => {
     try {
       const data = await firestoreService.getAllPaymentMethods();
-      setMethods(data.sort((a, b) => a.order - b.order));
+      // Already sorted by order in firestore-service
+      setMethods(data);
     } catch (error) {
       console.error('Error fetching payment methods:', error);
     }

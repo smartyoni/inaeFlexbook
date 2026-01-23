@@ -117,7 +117,9 @@ export const deleteCategory = async (id: string) => {
 
 export const getAllCategories = async (): Promise<Category[]> => {
   const docs = await getDocs(categoriesRef);
-  return docs.docs.map(docToObject<Category>);
+  return docs.docs
+    .map(docToObject<Category>)
+    .sort((a, b) => a.order - b.order);
 };
 
 // Payment Methods
@@ -136,7 +138,9 @@ export const deletePaymentMethod = async (id: string) => {
 
 export const getAllPaymentMethods = async (): Promise<PaymentMethod[]> => {
   const docs = await getDocs(paymentMethodsRef);
-  return docs.docs.map(docToObject<PaymentMethod>);
+  return docs.docs
+    .map(docToObject<PaymentMethod>)
+    .sort((a, b) => a.order - b.order);
 };
 
 // Projects
@@ -155,7 +159,9 @@ export const deleteProject = async (id: string) => {
 
 export const getAllProjects = async (): Promise<Project[]> => {
   const docs = await getDocs(projectsRef);
-  return docs.docs.map(docToObject<Project>);
+  return docs.docs
+    .map(docToObject<Project>)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 };
 
 export const getProjectById = async (id: string): Promise<Project | null> => {
