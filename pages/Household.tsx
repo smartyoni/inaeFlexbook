@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  Filter, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Filter,
   Search,
   ArrowUpRight,
   ArrowDownRight,
@@ -13,10 +13,9 @@ import {
   Edit2,
   Wallet
 } from 'lucide-react';
-import { db } from '../db';
 import { Transaction, Category, TransactionType, PaymentMethod } from '../types';
 import TransactionForm from '../components/TransactionForm';
-import { deleteTransactionWithSync } from '../sync';
+import * as firestoreService from '../firestore-service';
 
 const Household: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -28,30 +27,30 @@ const Household: React.FC = () => {
   const [filter, setFilter] = useState<TransactionType | 'all'>('all');
 
   const fetchTransactions = async () => {
-    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
-    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
-    
-    let query = db.transactions
-      .where('date')
-      .between(startOfMonth, endOfMonth, true, true);
-    
-    let results = await query.toArray();
-    
-    if (filter !== 'all') {
-      results = results.filter(t => t.type === filter);
+    try {
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
+
+      let results = await firestoreService.getTransactionsByDateRange(startOfMonth, endOfMonth);
+
+      if (filter !== 'all') {
+        results = results.filter(t => t.type === filter);
+      }
+
+      setTransactions(results.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+
+      const catsArray = await firestoreService.getAllCategories();
+      const catsMap: Record<string, Category> = {};
+      catsArray.forEach(c => catsMap[c.id] = c);
+      setCategories(catsMap);
+
+      const paysArray = await firestoreService.getAllPaymentMethods();
+      const paysMap: Record<string, PaymentMethod> = {};
+      paysArray.forEach(p => paysMap[p.id] = p);
+      setPaymentMethods(paysMap);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
     }
-    
-    setTransactions(results.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-
-    const catsArray = await db.categories.toArray();
-    const catsMap: Record<string, Category> = {};
-    catsArray.forEach(c => catsMap[c.id] = c);
-    setCategories(catsMap);
-
-    const paysArray = await db.paymentMethods.toArray();
-    const paysMap: Record<string, PaymentMethod> = {};
-    paysArray.forEach(p => paysMap[p.id] = p);
-    setPaymentMethods(paysMap);
   };
 
   useEffect(() => {
@@ -68,8 +67,13 @@ const Household: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (confirm('정말 삭제하시겠습니까?')) {
-      await deleteTransactionWithSync(id);
-      fetchTransactions();
+      try {
+        await firestoreService.deleteTransaction(id);
+        fetchTransactions();
+      } catch (error) {
+        console.error('Error deleting transaction:', error);
+        alert('삭제 실패. 다시 시도해주세요.');
+      }
     }
   };
 

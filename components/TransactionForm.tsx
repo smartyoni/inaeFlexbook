@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Wallet, Tag, FileText, Check, CreditCard } from 'lucide-react';
-import { db } from '../db';
+import { db } from '../firebase';
 import { Category, Project, TransactionType, Transaction, PaymentMethod } from '../types';
-import { addTransactionWithSync, updateTransactionWithSync } from '../sync';
+import * as firestoreService from '../firestore-service';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 interface TransactionFormProps {
   onClose: () => void;
@@ -27,28 +28,46 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSave, init
 
   useEffect(() => {
     const fetchData = async () => {
-      // Filter categories by type (Purchase Place vs Income Source)
-      const cats = await db.categories.where('type').equals(type).toArray();
-      // Filter payment methods by type (Payment Method vs Deposit Method)
-      const pays = await db.paymentMethods.where('type').equals(type).toArray();
-      const projs = await db.projects.where('status').equals('active').toArray();
-      
-      setCategories(cats);
-      setPaymentMethods(pays);
-      setProjects(projs);
-      
-      // Auto-select first item if current selection is invalid for the new type
-      if (cats.length > 0 && (!category || !cats.find(c => c.id === category))) {
-        setCategory(cats[0].id);
-      }
-      if (pays.length > 0 && (!paymentMethodId || !pays.find(p => p.id === paymentMethodId))) {
-        setPaymentMethodId(pays[0].id);
-      } else if (pays.length === 0) {
-        setPaymentMethodId('');
+      try {
+        // Fetch categories by type
+        const q1 = query(collection(db, 'categories'), where('type', '==', type));
+        const catDocs = await getDocs(q1);
+        const cats = catDocs.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id
+        } as Category));
+
+        // Fetch payment methods by type
+        const q2 = query(collection(db, 'paymentMethods'), where('type', '==', type));
+        const payDocs = await getDocs(q2);
+        const pays = payDocs.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id
+        } as PaymentMethod));
+
+        // Fetch active projects
+        const projs = await firestoreService.getAllProjects();
+        const activeProjs = projs.filter(p => p.status === 'active');
+
+        setCategories(cats);
+        setPaymentMethods(pays);
+        setProjects(activeProjs);
+
+        // Auto-select first item if current selection is invalid for the new type
+        if (cats.length > 0 && (!category || !cats.find(c => c.id === category))) {
+          setCategory(cats[0].id);
+        }
+        if (pays.length > 0 && (!paymentMethodId || !pays.find(p => p.id === paymentMethodId))) {
+          setPaymentMethodId(pays[0].id);
+        } else if (pays.length === 0) {
+          setPaymentMethodId('');
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
       }
     };
     fetchData();
-  }, [type]);
+  }, [type, category, paymentMethodId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,10 +87,16 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSave, init
       updatedAt: new Date().toISOString(),
     };
 
-    if (initialData) {
-      await updateTransactionWithSync(initialData.id, transactionData);
-    } else {
-      await addTransactionWithSync(transactionData);
+    try {
+      if (initialData) {
+        await firestoreService.updateTransaction(initialData.id, transactionData);
+      } else {
+        await firestoreService.addTransaction(transactionData);
+      }
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+      alert('저장 실패. 인터넷 연결을 확인하세요.');
+      return;
     }
 
     onSave();
