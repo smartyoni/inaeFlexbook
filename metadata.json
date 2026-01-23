@@ -6,8 +6,8 @@
   "scope": "/inaeFlexbook/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#4f46e5",
-  "background_color": "#f8fafc",
+  "theme_color": "#0a66ff",
+  "background_color": "#f7f6f5",
   "icons": [
     {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%234f46e5' width='192' height='192'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='100' font-weight='bold' fill='white' font-family='Arial'>FB</text></svg>",

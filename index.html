@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#4f46e5">
+    <meta name="theme-color" content="#0a66ff">
     <meta name="description" content="A professional household account book (가계부) with real-time tracking, statistics, and project management.">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,14 +12,81 @@
     <meta name="apple-mobile-web-app-title" content="FlexBook">
     <title>FlexBook - Professional Household Finance</title>
     <link rel="manifest" href="/inaeFlexbook/manifest.json">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%234f46e5' rx='12'/%3E%3Cg transform='translate(32, 32)'%3E%3Ccircle cx='0' cy='-4' r='11' fill='%23ffd700'/%3E%3Ccircle cx='0' cy='-16' r='7' fill='%23ffd700'/%3E%3Cellipse cx='0' cy='-18' rx='3' ry='2.5' fill='%23ffed4e'/%3E%3Cellipse cx='-5' cy='-20' rx='2' ry='4' fill='%23ffd700'/%3E%3Cellipse cx='5' cy='-20' rx='2' ry='4' fill='%23ffd700'/%3E%3Ccircle cx='-3' cy='-16' r='1.5' fill='%23000'/%3E%3Ccircle cx='3' cy='-16' r='1.5' fill='%23000'/%3E%3Cpath d='M -2 -13 Q 0 -12 2 -13' stroke='%23000' stroke-width='0.7' fill='none' stroke-linecap='round'/%3E%3Crect x='-7' y='6' width='2.5' height='6' rx='1' fill='%23ffd700'/%3E%3Crect x='-1.5' y='6' width='2.5' height='6' rx='1' fill='%23ffd700'/%3E%3Crect x='4' y='6' width='2.5' height='6' rx='1' fill='%23ffd700'/%3E%3Ccircle cx='10' cy='-3' r='1.5' fill='%23ffd700'/%3E%3Crect x='9' y='-8' width='3' height='4' rx='1' fill='%23ffed4e' stroke='%23ffc700' stroke-width='0.5'/%3E%3C/g%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%234f46e5' rx='45'/%3E%3Cg transform='translate(96, 96)'%3E%3Ccircle cx='0' cy='-8' r='28' fill='%23ffd700'/%3E%3Cellipse cx='0' cy='30' rx='36' ry='18' fill='%23ffd700'/%3E%3Ccircle cx='0' cy='-38' r='18' fill='%23ffd700'/%3E%3Cellipse cx='0' cy='-42' rx='8' ry='6' fill='%23ffed4e'/%3E%3Cellipse cx='-12' cy='-48' rx='6' ry='10' fill='%23ffd700'/%3E%3Cellipse cx='12' cy='-48' rx='6' ry='10' fill='%23ffd700'/%3E%3Cellipse cx='-12' cy='-46' rx='3' ry='5' fill='%23ffed4e'/%3E%3Cellipse cx='12' cy='-46' rx='3' ry='5' fill='%23ffed4e'/%3E%3Ccircle cx='-6' cy='-40' r='3' fill='%23000'/%3E%3Ccircle cx='6' cy='-40' r='3' fill='%23000'/%3E%3Ccircle cx='-5' cy='-40' r='1.5' fill='%23fff'/%3E%3Ccircle cx='7' cy='-40' r='1.5' fill='%23fff'/%3E%3Cpath d='M -4 -35 Q 0 -33 4 -35' stroke='%23000' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3Crect x='-16' y='18' width='6' height='16' rx='3' fill='%23ffd700'/%3E%3Crect x='-4' y='18' width='6' height='16' rx='3' fill='%23ffd700'/%3E%3Crect x='8' y='18' width='6' height='16' rx='3' fill='%23ffd700'/%3E%3Crect x='20' y='18' width='6' height='16' rx='3' fill='%23ffd700'/%3E%3Cpath d='M 28 -15 L 38 -12 L 38 0 L 28 3 Z' fill='%23ffed4e' stroke='%23ffd700' stroke-width='1.5'/%3E%3Ccircle cx='-8' cy='-8' r='4' fill='%23ffed4e' opacity='0.7'/%3E%3Ccircle cx='10' cy='-2' r='3.5' fill='%23ffed4e' opacity='0.7'/%3E%3C/g%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230a66ff' rx='12'/%3E%3Cg transform='translate(32, 32)'%3E%3Ccircle cx='0' cy='-4' r='11' fill='%23ffd700'/%3E%3Ccircle cx='0' cy='-16' r='7' fill='%23ffd700'/%3E%3Cellipse cx='0' cy='-18' rx='3' ry='2.5' fill='%23ffed4e'/%3E%3Cellipse cx='-5' cy='-20' rx='2' ry='4' fill='%23ffd700'/%3E%3Cellipse cx='5' cy='-20' rx='2' ry='4' fill='%23ffd700'/%3E%3Ccircle cx='-3' cy='-16' r='1.5' fill='%23000'/%3E%3Ccircle cx='3' cy='-16' r='1.5' fill='%23000'/%3E%3Cpath d='M -2 -13 Q 0 -12 2 -13' stroke='%23000' stroke-width='0.7' fill='none' stroke-linecap='round'/%3E%3Crect x='-7' y='6' width='2.5' height='6' rx='1' fill='%23ffd700'/%3E%3Crect x='-1.5' y='6' width='2.5' height='6' rx='1' fill='%23ffd700'/%3E%3Crect x='4' y='6' width='2.5' height='6' rx='1' fill='%23ffd700'/%3E%3Ccircle cx='10' cy='-3' r='1.5' fill='%23ffd700'/%3E%3Crect x='9' y='-8' width='3' height='4' rx='1' fill='%23ffed4e' stroke='%23ffc700' stroke-width='0.5'/%3E%3C/g%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230a66ff' rx='45'/%3E%3Cg transform='translate(96, 96)'%3E%3Ccircle cx='0' cy='-8' r='28' fill='%23ffd700'/%3E%3Cellipse cx='0' cy='30' rx='36' ry='18' fill='%23ffd700'/%3E%3Ccircle cx='0' cy='-38' r='18' fill='%23ffd700'/%3E%3Cellipse cx='0' cy='-42' rx='8' ry='6' fill='%23ffed4e'/%3E%3Cellipse cx='-12' cy='-48' rx='6' ry='10' fill='%23ffd700'/%3E%3Cellipse cx='12' cy='-48' rx='6' ry='10' fill='%23ffd700'/%3E%3Cellipse cx='-12' cy='-46' rx='3' ry='5' fill='%23ffed4e'/%3E%3Cellipse cx='12' cy='-46' rx='3' ry='5' fill='%23ffed4e'/%3E%3Ccircle cx='-6' cy='-40' r='3' fill='%23000'/%3E%3Ccircle cx='6' cy='-40' r='3' fill='%23000'/%3E%3Ccircle cx='-5' cy='-40' r='1.5' fill='%23fff'/%3E%3Ccircle cx='7' cy='-40' r='1.5' fill='%23fff'/%3E%3Cpath d='M -4 -35 Q 0 -33 4 -35' stroke='%23000' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3Crect x='-16' y='18' width='6' height='16' rx='3' fill='%23ffd700'/%3E%3Crect x='-4' y='18' width='6' height='16' rx='3' fill='%23ffd700'/%3E%3Crect x='8' y='18' width='6' height='16' rx='3' fill='%23ffd700'/%3E%3Crect x='20' y='18' width='6' height='16' rx='3' fill='%23ffd700'/%3E%3Cpath d='M 28 -15 L 38 -12 L 38 0 L 28 3 Z' fill='%23ffed4e' stroke='%23ffd700' stroke-width='1.5'/%3E%3Ccircle cx='-8' cy='-8' r='4' fill='%23ffed4e' opacity='0.7'/%3E%3Ccircle cx='10' cy='-2' r='3.5' fill='%23ffed4e' opacity='0.7'/%3E%3C/g%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@100..900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Pretendard', sans-serif; }
+        :root {
+            /* Notion Color Palette */
+            --notion-bg: #ffffff;
+            --notion-bg-secondary: #f7f6f5;
+            --notion-bg-tertiary: #efefed;
+            --notion-text-primary: #37352f;
+            --notion-text-secondary: #626060;
+            --notion-text-tertiary: #9a9795;
+            --notion-border: #e5e3e1;
+            --notion-border-dark: #d9d7d3;
+
+            /* Notion Accent Colors */
+            --notion-blue: #0a66ff;
+            --notion-red: #d93026;
+            --notion-green: #0a942f;
+            --notion-yellow: #b8860b;
+            --notion-purple: #6965db;
+            --notion-pink: #d946ef;
+        }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--notion-bg-secondary);
+            color: var(--notion-text-primary);
+        }
+
+        /* Override Tailwind colors with Notion palette */
+        .bg-slate-50 { background-color: var(--notion-bg-secondary) !important; }
+        .bg-white { background-color: var(--notion-bg) !important; }
+        .bg-slate-100 { background-color: var(--notion-bg-tertiary) !important; }
+
+        .text-slate-800 { color: var(--notion-text-primary) !important; }
+        .text-slate-700 { color: var(--notion-text-secondary) !important; }
+        .text-slate-600 { color: var(--notion-text-secondary) !important; }
+        .text-slate-500 { color: var(--notion-text-secondary) !important; }
+        .text-slate-400 { color: var(--notion-text-tertiary) !important; }
+        .text-slate-300 { color: var(--notion-text-tertiary) !important; }
+        .text-slate-200 { color: var(--notion-border) !important; }
+
+        .border-slate-200 { border-color: var(--notion-border) !important; }
+        .border-slate-100 { border-color: var(--notion-border) !important; }
+
+        .hover\:bg-slate-50:hover { background-color: var(--notion-bg-tertiary) !important; }
+        .hover\:text-slate-600:hover { color: var(--notion-text-secondary) !important; }
+
+        .text-indigo-600 { color: var(--notion-blue) !important; }
+        .hover\:text-indigo-600:hover { color: var(--notion-blue) !important; }
+        .bg-indigo-600 { background-color: var(--notion-blue) !important; }
+        .hover\:bg-indigo-600:hover { background-color: var(--notion-blue) !important; }
+        .bg-indigo-200 { background-color: rgba(10, 102, 255, 0.15) !important; }
+        .border-indigo-100 { border-color: rgba(10, 102, 255, 0.2) !important; }
+        .border-indigo-600 { border-color: var(--notion-blue) !important; }
+        .text-indigo-700 { color: var(--notion-blue) !important; }
+        .shadow-indigo-200 { --tw-shadow-color: rgba(10, 102, 255, 0.15) !important; }
+
+        .bg-emerald-500 { background-color: var(--notion-green) !important; }
+        .shadow-emerald-200 { --tw-shadow-color: rgba(10, 148, 47, 0.15) !important; }
+
+        .bg-rose-500 { background-color: var(--notion-red) !important; }
+        .bg-rose-600 { background-color: var(--notion-red) !important; }
+        .shadow-rose-200 { --tw-shadow-color: rgba(217, 48, 38, 0.15) !important; }
+        .text-rose-600:hover { color: var(--notion-red) !important; }
+
+        .shadow-indigo-100 { --tw-shadow-color: rgba(10, 102, 255, 0.1) !important; }
+        .shadow-xl { box-shadow: 0 20px 25px -5px var(--tw-shadow-color, rgba(0, 0, 0, 0.1)) !important; }
+        .shadow-lg { box-shadow: 0 10px 15px -3px var(--tw-shadow-color, rgba(0, 0, 0, 0.1)) !important; }
+        .shadow-sm { box-shadow: 0 1px 2px 0px var(--tw-shadow-color, rgba(0, 0, 0, 0.05)) !important; }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>

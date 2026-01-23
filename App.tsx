@@ -37,14 +37,15 @@ const Navigation = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-2 flex justify-around items-center z-50">
+    <nav className="fixed bottom-0 left-0 right-0 px-4 py-2 flex justify-around items-center z-50" style={{ backgroundColor: 'var(--notion-bg)', borderTop: '1px solid var(--notion-border)' }}>
       {navItems.map((item) => (
         <Link
           key={item.path}
           to={item.path}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive(item.path) ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
-          }`}
+          className={`flex flex-col items-center gap-1 transition-colors`}
+          style={{
+            color: isActive(item.path) ? 'var(--notion-blue)' : 'var(--notion-text-tertiary)',
+          }}
         >
           <item.icon size={20} strokeWidth={isActive(item.path) ? 2.5 : 2} />
           <span className="text-[10px] font-medium">{item.label}</span>
@@ -63,10 +64,10 @@ const App: React.FC = () => {
 
   if (!initialized) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
+      <div className="h-screen w-screen flex items-center justify-center" style={{ backgroundColor: 'var(--notion-bg-secondary)' }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium animate-pulse">FlexBook 불러오는 중...</p>
+          <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: 'var(--notion-border)', borderTopColor: 'var(--notion-blue)' }}></div>
+          <p className="font-medium animate-pulse" style={{ color: 'var(--notion-text-secondary)' }}>FlexBook 불러오는 중...</p>
         </div>
       </div>
     );
@@ -74,7 +75,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 pb-20">
+      <div className="min-h-screen pb-20" style={{ backgroundColor: 'var(--notion-bg-secondary)' }}>
         <Routes>
           <Route path="/" element={<Household />} />
           <Route path="/analysis" element={<CategoryAnalysis />} />
