@@ -1,7 +1,7 @@
 {
   "name": "FlexBook - Professional Household Finance",
   "short_name": "FlexBook",
-  "description": "A professional household account book (가계부) with real-time tracking, statistics, and project management.",
+  "description": "A professional household account book with real-time tracking, statistics, and project management.",
   "start_url": "/inaeFlexbook/",
   "scope": "/inaeFlexbook/",
   "display": "standalone",
@@ -22,51 +22,10 @@
       "purpose": "any"
     },
     {
-      "src": "/inaeFlexbook/icon-192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    },
-    {
       "src": "/inaeFlexbook/icon-512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
-    },
-    {
-      "src": "/inaeFlexbook/icon-512.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    }
-  ],
-  "categories": ["finance", "productivity"],
-  "shortcuts": [
-    {
-      "name": "Add Transaction",
-      "short_name": "Add",
-      "description": "Quickly add a new transaction",
-      "url": "/inaeFlexbook/?action=add",
-      "icons": [
-        {
-          "src": "/inaeFlexbook/icon-192.svg",
-          "sizes": "192x192",
-          "type": "image/svg+xml"
-        }
-      ]
-    },
-    {
-      "name": "View Statistics",
-      "short_name": "Stats",
-      "description": "Check your finance statistics",
-      "url": "/inaeFlexbook/statistics",
-      "icons": [
-        {
-          "src": "/inaeFlexbook/icon-192.svg",
-          "sizes": "192x192",
-          "type": "image/svg+xml"
-        }
-      ]
     }
   ]
 }
