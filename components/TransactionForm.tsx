@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Wallet, Tag, FileText, Check, CreditCard } from 'lucide-react';
 import { db } from '../db';
 import { Category, Project, TransactionType, Transaction, PaymentMethod } from '../types';
+import { addTransactionWithSync, updateTransactionWithSync } from '../sync';
 
 interface TransactionFormProps {
   onClose: () => void;
@@ -68,9 +69,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSave, init
     };
 
     if (initialData) {
-      await db.transactions.update(initialData.id, transactionData);
+      await updateTransactionWithSync(initialData.id, transactionData);
     } else {
-      await db.transactions.add(transactionData);
+      await addTransactionWithSync(transactionData);
     }
 
     onSave();

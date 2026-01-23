@@ -16,6 +16,7 @@ import {
 import { db } from '../db';
 import { Transaction, Category, TransactionType, PaymentMethod } from '../types';
 import TransactionForm from '../components/TransactionForm';
+import { deleteTransactionWithSync } from '../sync';
 
 const Household: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -67,7 +68,7 @@ const Household: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (confirm('정말 삭제하시겠습니까?')) {
-      await db.transactions.delete(id);
+      await deleteTransactionWithSync(id);
       fetchTransactions();
     }
   };
