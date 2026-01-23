@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Edit2, Trash2, X, Check, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../db';
 import { PaymentMethod, TransactionType } from '../types';
+import * as firestoreService from '../firestore-service';
 
 const PaymentMethodManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -16,8 +16,12 @@ const PaymentMethodManagement: React.FC = () => {
   const [color, setColor] = useState('#6366f1');
 
   const fetchMethods = async () => {
-    const data = await db.paymentMethods.toArray();
-    setMethods(data.sort((a, b) => a.order - b.order));
+    try {
+      const data = await firestoreService.getAllPaymentMethods();
+      setMethods(data.sort((a, b) => a.order - b.order));
+    } catch (error) {
+      console.error('Error fetching payment methods:', error);
+    }
   };
 
   useEffect(() => {
@@ -48,8 +52,13 @@ const PaymentMethodManagement: React.FC = () => {
     const isIncome = methods.find(m => m.id === id)?.type === 'income';
     const label = isIncome ? '입금방법' : '결제수단';
     if (confirm(`이 ${label}을 삭제하시겠습니까? 기존 내역의 정보가 사라질 수 있습니다.`)) {
-      await db.paymentMethods.delete(id);
-      fetchMethods();
+      try {
+        await firestoreService.deletePaymentMethod(id);
+        fetchMethods();
+      } catch (error) {
+        console.error('Error deleting payment method:', error);
+        alert('삭제 실패. 다시 시도해주세요.');
+      }
     }
   };
 
@@ -57,23 +66,27 @@ const PaymentMethodManagement: React.FC = () => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const methodData = {
-      id: editingMethod?.id || crypto.randomUUID(),
-      name,
-      type,
-      color,
-      order: editingMethod?.order ?? methods.length
-    };
+    try {
+      const methodData: Omit<PaymentMethod, 'id'> = {
+        name,
+        type,
+        color,
+        order: editingMethod?.order ?? methods.length
+      };
 
-    if (editingMethod) {
-      await db.paymentMethods.update(editingMethod.id, methodData);
-    } else {
-      await db.paymentMethods.add(methodData);
+      if (editingMethod) {
+        await firestoreService.updatePaymentMethod(editingMethod.id, methodData);
+      } else {
+        await firestoreService.addPaymentMethod(methodData);
+      }
+
+      setIsModalOpen(false);
+      fetchMethods();
+      resetForm();
+    } catch (error) {
+      console.error('Error saving payment method:', error);
+      alert('저장 실패. 다시 시도해주세요.');
     }
-
-    setIsModalOpen(false);
-    fetchMethods();
-    resetForm();
   };
 
   return (

@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Edit2, Trash2, X, Check, Grid } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../db';
 import { Category, TransactionType } from '../types';
+import * as firestoreService from '../firestore-service';
 
 const CategoryManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -17,8 +17,12 @@ const CategoryManagement: React.FC = () => {
   const [color, setColor] = useState('#4f46e5');
 
   const fetchCategories = async () => {
-    const cats = await db.categories.toArray();
-    setCategories(cats.sort((a, b) => a.order - b.order));
+    try {
+      const cats = await firestoreService.getAllCategories();
+      setCategories(cats.sort((a, b) => a.order - b.order));
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
   };
 
   useEffect(() => {
@@ -49,8 +53,13 @@ const CategoryManagement: React.FC = () => {
     const category = categories.find(c => c.id === id);
     const label = category?.type === 'income' ? '수입원' : '구매처';
     if (confirm(`이 ${label}를 삭제하시겠습니까? 해당 항목으로 기록된 기존 내역의 분류가 사라질 수 있습니다.`)) {
-      await db.categories.delete(id);
-      fetchCategories();
+      try {
+        await firestoreService.deleteCategory(id);
+        fetchCategories();
+      } catch (error) {
+        console.error('Error deleting category:', error);
+        alert('삭제 실패. 다시 시도해주세요.');
+      }
     }
   };
 
@@ -58,24 +67,28 @@ const CategoryManagement: React.FC = () => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const categoryData = {
-      id: editingCategory?.id || crypto.randomUUID(),
-      name,
-      type,
-      color,
-      icon: 'Tag', // Default icon for now
-      order: editingCategory?.order ?? categories.length
-    };
+    try {
+      const categoryData: Omit<Category, 'id'> = {
+        name,
+        type,
+        color,
+        icon: 'Tag', // Default icon for now
+        order: editingCategory?.order ?? categories.length
+      };
 
-    if (editingCategory) {
-      await db.categories.update(editingCategory.id, categoryData);
-    } else {
-      await db.categories.add(categoryData);
+      if (editingCategory) {
+        await firestoreService.updateCategory(editingCategory.id, categoryData);
+      } else {
+        await firestoreService.addCategory(categoryData);
+      }
+
+      setIsModalOpen(false);
+      fetchCategories();
+      resetForm();
+    } catch (error) {
+      console.error('Error saving category:', error);
+      alert('저장 실패. 다시 시도해주세요.');
     }
-
-    setIsModalOpen(false);
-    fetchCategories();
-    resetForm();
   };
 
   return (
