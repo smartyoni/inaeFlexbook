@@ -1,15 +1,16 @@
 
 import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  BarChart3, 
-  Settings, 
-  Briefcase, 
+import {
+  Home,
+  BarChart3,
+  Settings,
+  Briefcase,
   Plus,
   PieChart
 } from 'lucide-react';
 import { initializeSeedData } from './db';
+import './firebase'; // Initialize Firebase
 
 // Lazy load pages for better performance
 import Household from './pages/Household';
