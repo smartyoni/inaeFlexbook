@@ -1,20 +1,7 @@
 const CACHE_NAME = 'flexbook-v1';
-const ASSETS_TO_CACHE = [
-  '/inaeFlexbook/',
-  '/inaeFlexbook/index.html',
-  '/inaeFlexbook/manifest.json',
-];
 
-// Install event - cache assets
+// Install event
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE).catch(() => {
-        // If some assets fail to cache, continue
-        console.log('Some assets failed to cache during install');
-      });
-    })
-  );
   self.skipWaiting();
 });
 
@@ -34,52 +21,45 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - network first, fallback to cache
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  const url = new URL(request.url);
 
-  // Skip non-GET requests and external URLs
-  if (request.method !== 'GET' || !url.pathname.startsWith('/inaeFlexbook/')) {
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
     return;
   }
 
+  // Network first strategy
   event.respondWith(
-    caches.match(request).then((response) => {
-      if (response) {
-        return response;
-      }
-
-      return fetch(request).then((response) => {
+    fetch(request)
+      .then((response) => {
         // Don't cache non-successful responses
         if (!response || response.status !== 200) {
           return response;
         }
 
-        // Clone the response
+        // Clone and cache successful responses
         const responseToCache = response.clone();
-
-        // Cache successful responses
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(request, responseToCache).catch(() => {
-            // Ignore cache errors
-          });
+          cache.put(request, responseToCache);
         });
 
         return response;
-      }).catch(() => {
-        // Offline fallback
-        if (request.destination === 'document') {
-          return caches.match('/inaeFlexbook/index.html');
-        }
-      });
-    })
+      })
+      .catch(() => {
+        // Fallback to cache for offline
+        return caches.match(request).then((cached) => {
+          if (cached) {
+            return cached;
+          }
+          // If offline and no cache, return a simple offline page
+          if (request.destination === 'document') {
+            return caches.match('/inaeFlexbook/index.html').catch(() => {
+              return new Response('Offline');
+            });
+          }
+        });
+      })
   );
-});
-
-// Handle messages from clients
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
 });
