@@ -70,6 +70,37 @@ export const getTransactionsByDateRange = async (startDate: string, endDate: str
   return docs.docs.map(docToObject<Transaction>);
 };
 
+export const getTransactionsByProjectId = async (projectId: string): Promise<Transaction[]> => {
+  const q = query(
+    transactionsRef,
+    where('projectId', '==', projectId),
+    orderBy('date', 'desc')
+  );
+  const docs = await getDocs(q);
+  return docs.docs.map(docToObject<Transaction>);
+};
+
+export const updateTransactionProjectId = async (projectId: string, newProjectId: string | null) => {
+  const q = query(transactionsRef, where('projectId', '==', projectId));
+  const docs = await getDocs(q);
+  for (const docSnap of docs.docs) {
+    await updateDoc(doc(transactionsRef, docSnap.id), { projectId: newProjectId });
+  }
+};
+
+export const getTransactionsByYear = async (year: number): Promise<Transaction[]> => {
+  const startOfYear = new Date(year, 0, 1).toISOString();
+  const endOfYear = new Date(year, 11, 31).toISOString();
+  return getTransactionsByDateRange(startOfYear, endOfYear);
+};
+
+export const getTransactionsByMonthAndType = async (year: number, month: number, type: 'income' | 'expense'): Promise<Transaction[]> => {
+  const startOfMonth = new Date(year, month, 1).toISOString();
+  const endOfMonth = new Date(year, month + 1, 0).toISOString();
+  const transactions = await getTransactionsByDateRange(startOfMonth, endOfMonth);
+  return transactions.filter(t => t.type === type);
+};
+
 // Categories
 export const addCategory = async (category: Omit<Category, 'id'>) => {
   const docRef = await addDoc(categoriesRef, category);

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { db } from '../db';
+import * as firestoreService from '../firestore-service';
 import { ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 
 const Statistics: React.FC = () => {
@@ -9,23 +9,25 @@ const Statistics: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
 
   const fetchData = async () => {
-    const transactions = await db.transactions
-      .filter(t => new Date(t.date).getFullYear() === year)
-      .toArray();
+    try {
+      const transactions = await firestoreService.getTransactionsByYear(year);
 
-    const monthlyData = Array.from({ length: 12 }, (_, i) => ({
-      month: `${i + 1}월`,
-      income: 0,
-      expense: 0
-    }));
+      const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+        month: `${i + 1}월`,
+        income: 0,
+        expense: 0
+      }));
 
-    transactions.forEach(t => {
-      const monthIdx = new Date(t.date).getMonth();
-      if (t.type === 'income') monthlyData[monthIdx].income += t.amount;
-      else monthlyData[monthIdx].expense += t.amount;
-    });
+      transactions.forEach(t => {
+        const monthIdx = new Date(t.date).getMonth();
+        if (t.type === 'income') monthlyData[monthIdx].income += t.amount;
+        else monthlyData[monthIdx].expense += t.amount;
+      });
 
-    setData(monthlyData);
+      setData(monthlyData);
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
+    }
   };
 
   useEffect(() => {

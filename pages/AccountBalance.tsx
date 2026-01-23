@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { db } from '../db';
+import * as firestoreService from '../firestore-service';
 import { BankAccount } from '../types';
 import { Plus, CreditCard, ArrowLeft, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -12,8 +12,12 @@ const AccountBalance: React.FC = () => {
   const [newAcc, setNewAcc] = useState({ name: '', alias: '' });
 
   const fetchAccounts = async () => {
-    const data = await db.bankAccounts.toArray();
-    setAccounts(data);
+    try {
+      const data = await firestoreService.getAllBankAccounts();
+      setAccounts(data);
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+    }
   };
 
   useEffect(() => {
@@ -22,16 +26,20 @@ const AccountBalance: React.FC = () => {
 
   const handleAdd = async () => {
     if (!newAcc.name) return;
-    await db.bankAccounts.add({
-      id: crypto.randomUUID(),
-      bankName: newAcc.name,
-      accountAlias: newAcc.alias,
-      createdAt: new Date().toISOString(),
-      isActive: true
-    });
-    setNewAcc({ name: '', alias: '' });
-    setIsAdding(false);
-    fetchAccounts();
+    try {
+      await firestoreService.addBankAccount({
+        bankName: newAcc.name,
+        accountAlias: newAcc.alias,
+        createdAt: new Date().toISOString(),
+        isActive: true
+      });
+      setNewAcc({ name: '', alias: '' });
+      setIsAdding(false);
+      fetchAccounts();
+    } catch (error) {
+      console.error('Error adding bank account:', error);
+      alert('계좌 추가에 실패했습니다.');
+    }
   };
 
   return (
@@ -55,11 +63,16 @@ const AccountBalance: React.FC = () => {
                 <p className="text-xs text-slate-400 font-medium">{acc.accountAlias || '별칭 없음'}</p>
               </div>
             </div>
-            <button 
+            <button
               onClick={async () => {
                 if (confirm('계좌를 삭제하시겠습니까?')) {
-                  await db.bankAccounts.delete(acc.id);
-                  fetchAccounts();
+                  try {
+                    await firestoreService.deleteAccount(acc.id);
+                    fetchAccounts();
+                  } catch (error) {
+                    console.error('Error deleting account:', error);
+                    alert('계좌 삭제에 실패했습니다.');
+                  }
                 }
               }}
               className="p-2 text-slate-300 hover:text-rose-500 transition-colors"

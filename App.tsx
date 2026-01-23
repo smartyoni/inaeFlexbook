@@ -9,7 +9,6 @@ import {
   Plus,
   PieChart
 } from 'lucide-react';
-import { initializeSeedData } from './db';
 import './firebase'; // Initialize Firebase
 
 // Lazy load pages for better performance
@@ -57,23 +56,6 @@ const Navigation = () => {
 };
 
 const App: React.FC = () => {
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
-    initializeSeedData().then(() => setInitialized(true));
-  }, []);
-
-  if (!initialized) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center" style={{ backgroundColor: 'var(--notion-bg-secondary)' }}>
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: 'var(--notion-border)', borderTopColor: 'var(--notion-blue)' }}></div>
-          <p className="font-medium animate-pulse" style={{ color: 'var(--notion-text-secondary)' }}>FlexBook 불러오는 중...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <Router>
       <div className="min-h-screen pb-20" style={{ backgroundColor: 'var(--notion-bg-secondary)' }}>

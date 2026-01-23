@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Briefcase, ChevronRight, CheckCircle2, Clock, Archive } from 'lucide-react';
-import { db } from '../db';
 import { Project } from '../types';
 import { Link } from 'react-router-dom';
+import * as firestoreService from '../firestore-service';
 
 const Projects: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -11,8 +11,12 @@ const Projects: React.FC = () => {
   const [newProject, setNewProject] = useState({ name: '', description: '', color: '#4f46e5' });
 
   const fetchProjects = async () => {
-    const projs = await db.projects.toArray();
-    setProjects(projs);
+    try {
+      const projs = await firestoreService.getAllProjects();
+      setProjects(projs);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
   };
 
   useEffect(() => {
@@ -23,19 +27,24 @@ const Projects: React.FC = () => {
     e.preventDefault();
     if (!newProject.name) return;
 
-    await db.projects.add({
-      id: crypto.randomUUID(),
-      name: newProject.name,
-      description: newProject.description,
-      color: newProject.color,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    });
+    try {
+      await firestoreService.addProject({
+        id: crypto.randomUUID(),
+        name: newProject.name,
+        description: newProject.description,
+        color: newProject.color,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
 
-    setNewProject({ name: '', description: '', color: '#4f46e5' });
-    setIsModalOpen(false);
-    fetchProjects();
+      setNewProject({ name: '', description: '', color: '#4f46e5' });
+      setIsModalOpen(false);
+      fetchProjects();
+    } catch (error) {
+      console.error('Error creating project:', error);
+      alert('프로젝트 생성 실패. 다시 시도해주세요.');
+    }
   };
 
   const statusIcons = {

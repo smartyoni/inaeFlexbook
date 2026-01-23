@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { db } from '../db';
+import * as firestoreService from '../firestore-service';
 import { Transaction, Category, TransactionType } from '../types';
 import { ChevronLeft, ChevronRight, PieChart as PieIcon } from 'lucide-react';
 
@@ -11,32 +11,33 @@ const CategoryAnalysis: React.FC = () => {
   const [data, setData] = useState<{ name: string; value: number; color: string }[]>([]);
 
   const fetchData = async () => {
-    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
-    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
-    
-    const transactions = await db.transactions
-      .where('date')
-      .between(startOfMonth, endOfMonth, true, true)
-      .and(t => t.type === type)
-      .toArray();
+    try {
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
 
-    const categories = await db.categories.toArray();
-    const catsMap: Record<string, Category> = {};
-    categories.forEach(c => catsMap[c.id] = c);
+      const transactions = await firestoreService.getTransactionsByDateRange(startOfMonth, endOfMonth);
+      const filteredTransactions = transactions.filter(t => t.type === type);
 
-    const grouping: Record<string, number> = {};
-    transactions.forEach(t => {
-      const catName = catsMap[t.category]?.name || '미지정';
-      grouping[catName] = (grouping[catName] || 0) + t.amount;
-    });
+      const categories = await firestoreService.getAllCategories();
+      const catsMap: Record<string, Category> = {};
+      categories.forEach(c => catsMap[c.id] = c);
 
-    const chartData = Object.entries(grouping).map(([name, value]) => ({
-      name,
-      value,
-      color: categories.find(c => c.name === name)?.color || '#cbd5e1'
-    })).sort((a, b) => b.value - a.value);
+      const grouping: Record<string, number> = {};
+      filteredTransactions.forEach(t => {
+        const catName = catsMap[t.category]?.name || '미지정';
+        grouping[catName] = (grouping[catName] || 0) + t.amount;
+      });
 
-    setData(chartData);
+      const chartData = Object.entries(grouping).map(([name, value]) => ({
+        name,
+        value,
+        color: categories.find(c => c.name === name)?.color || '#cbd5e1'
+      })).sort((a, b) => b.value - a.value);
+
+      setData(chartData);
+    } catch (error) {
+      console.error('Error fetching category analysis:', error);
+    }
   };
 
   useEffect(() => {

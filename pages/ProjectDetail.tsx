@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MoreHorizontal, Target, ArrowUpRight, ArrowDownRight, Edit2, Trash2 } from 'lucide-react';
-import { db } from '../db';
+import * as firestoreService from '../firestore-service';
 import { Project, Transaction } from '../types';
 
 const ProjectDetail: React.FC = () => {
@@ -14,12 +14,16 @@ const ProjectDetail: React.FC = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       if (!id) return;
-      const proj = await db.projects.get(id);
-      if (!proj) return navigate('/projects');
-      setProject(proj);
+      try {
+        const proj = await firestoreService.getProjectById(id);
+        if (!proj) return navigate('/projects');
+        setProject(proj);
 
-      const trans = await db.transactions.where('projectId').equals(id).toArray();
-      setTransactions(trans.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        const trans = await firestoreService.getTransactionsByProjectId(id);
+        setTransactions(trans.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      } catch (error) {
+        console.error('Error fetching project details:', error);
+      }
     };
     fetchDetails();
   }, [id, navigate]);
@@ -32,10 +36,15 @@ const ProjectDetail: React.FC = () => {
 
   const handleDeleteProject = async () => {
     if (confirm('프로젝트와 관련된 모든 기록 연결이 해제됩니다. 정말 삭제하시겠습니까?')) {
-      // We don't delete transactions, just clear their projectId
-      await db.transactions.where('projectId').equals(project.id).modify({ projectId: null });
-      await db.projects.delete(project.id);
-      navigate('/projects');
+      try {
+        // We don't delete transactions, just clear their projectId
+        await firestoreService.updateTransactionProjectId(project.id, null);
+        await firestoreService.deleteProject(project.id);
+        navigate('/projects');
+      } catch (error) {
+        console.error('Error deleting project:', error);
+        alert('프로젝트 삭제에 실패했습니다.');
+      }
     }
   };
 
