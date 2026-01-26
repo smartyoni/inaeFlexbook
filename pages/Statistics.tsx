@@ -134,11 +134,8 @@ const Checklist: React.FC = () => {
 
   return (
     <div className="max-w-full mx-auto px-6 pt-6 pb-12">
-      <header className="mb-8">
+      <header className="mb-4">
         <h1 className="text-2xl font-black text-slate-800 tracking-tight">체크리스트</h1>
-        <p className="text-sm text-slate-400 font-medium mt-1">
-          {cards.length}/20 카드
-        </p>
       </header>
 
       {/* Cards Grid */}
