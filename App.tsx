@@ -30,9 +30,9 @@ const Navigation = () => {
 
   const navItems = [
     { path: '/', label: '내역', icon: Home },
+    { path: '/statistics', label: '체크리스트', icon: CheckSquare2 },
     { path: '/projects', label: '프로젝트', icon: Briefcase },
     { path: '/analysis', label: '분석', icon: PieChart },
-    { path: '/statistics', label: '체크리스트', icon: CheckSquare2 },
     { path: '/settings', label: '설정', icon: Settings },
   ];
 
