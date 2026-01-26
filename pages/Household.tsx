@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Transaction, Category, TransactionType, PaymentMethod } from '../types';
 import TransactionForm from '../components/TransactionForm';
+import DailyAnalysis from '../components/DailyAnalysis';
 import * as firestoreService from '../firestore-service';
 
 const Household: React.FC = () => {
@@ -25,6 +26,10 @@ const Household: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>();
   const [filter, setFilter] = useState<TransactionType | 'all'>('all');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [showAnalysisSheet, setShowAnalysisSheet] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const fetchTransactions = async () => {
     try {
@@ -57,6 +62,14 @@ const Household: React.FC = () => {
     fetchTransactions();
   }, [currentDate, filter]);
 
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isDesktop = windowWidth >= 768;
+
   const changeMonth = (offset: number) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
   };
@@ -82,6 +95,14 @@ const Household: React.FC = () => {
     return groups;
   }, {});
 
+  // Auto-select date on desktop if none selected
+  useEffect(() => {
+    if (isDesktop && !selectedDate && Object.keys(groupedTransactions).length > 0) {
+      const latestDate = Object.keys(groupedTransactions).sort((a, b) => b.localeCompare(a))[0];
+      setSelectedDate(latestDate);
+    }
+  }, [isDesktop, groupedTransactions, selectedDate]);
+
   // Helper to convert Firestore Timestamp to Date
   const getDate = (date: any): Date => {
     if (typeof date === 'string') {
@@ -92,11 +113,34 @@ const Household: React.FC = () => {
     return new Date(date);
   };
 
+  // Helper to get date string in YYYY-MM-DD format
+  const getDateString = (date: any): string => {
+    if (typeof date === 'string') {
+      return date.split('T')[0];
+    } else if (date && typeof date === 'object' && 'toDate' in date) {
+      return (date as any).toDate().toISOString().split('T')[0];
+    }
+    return new Date(date).toISOString().split('T')[0];
+  };
+
   // Calculate daily income and expense
   const getDailyStats = (dayTransactions: typeof transactions) => {
     const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
     const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
     return { income, expense };
+  };
+
+  const handleDateClick = (date: string) => {
+    setSelectedDate(date);
+    if (!isDesktop) {
+      setShowAnalysisSheet(true);
+    }
+  };
+
+  const handleTransactionClick = (transaction: Transaction) => {
+    const dateKey = getDateString(transaction.date);
+    setSelectedTransaction(transaction);
+    handleDateClick(dateKey);
   };
 
   const handleDelete = async (id: string) => {
@@ -112,12 +156,16 @@ const Household: React.FC = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto px-4 pt-6 pb-12">
+    <div className={`${
+      isDesktop
+        ? 'max-w-7xl mx-auto px-4 pt-6 pb-12'
+        : 'max-w-xl mx-auto px-4 pt-6 pb-12'
+    }`}>
       {/* Header & Month Selector */}
       <header className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">가계부</h1>
-          <p className="text-sm text-slate-400 font-medium">실시간 금융 관리</p>
+          <p className="text-sm text-indigo-600 font-medium">나의 천사 김인애를 위해 만들었습니다.</p>
         </div>
         <div className="flex items-center gap-4 bg-white p-1 rounded-full shadow-sm border border-slate-100">
           <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-50 rounded-full text-slate-400">
@@ -133,7 +181,7 @@ const Household: React.FC = () => {
       </header>
 
       {/* Summary Cards */}
-      <section className="grid grid-cols-2 gap-4 mb-8">
+      <section className="grid grid-cols-3 gap-4 mb-8">
         <div className="bg-emerald-500 p-4 rounded-2xl shadow-lg shadow-emerald-200 text-white">
           <div className="flex justify-between items-start mb-2">
             <span className="text-xs font-bold opacity-80 uppercase tracking-widest">수입</span>
@@ -148,59 +196,70 @@ const Household: React.FC = () => {
           </div>
           <div className="text-xl font-black">₩{totalExpense.toLocaleString()}</div>
         </div>
-        <div className="col-span-2 bg-indigo-600 p-6 rounded-3xl shadow-xl shadow-indigo-100 text-white relative overflow-hidden">
-          <div className="relative z-10">
-            <span className="text-xs font-bold opacity-80 uppercase tracking-widest block mb-1">총 잔액</span>
-            <div className="text-3xl font-black tracking-tight">₩{balance.toLocaleString()}</div>
+        <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-200 text-white relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2">
+            <span className="text-xs font-bold opacity-80 uppercase tracking-widest">총 잔액</span>
           </div>
-          <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="text-xl font-black">₩{balance.toLocaleString()}</div>
+          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-3xl"></div>
         </div>
       </section>
 
-      {/* Filter & Search */}
-      <section className="flex gap-2 mb-6 overflow-x-auto no-scrollbar py-1">
-        <button 
-          onClick={() => setFilter('all')}
-          className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === 'all' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}
-        >
-          전체
-        </button>
-        <button 
-          onClick={() => setFilter('income')}
-          className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === 'income' ? 'bg-emerald-500 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}
-        >
-          수입만
-        </button>
-        <button 
-          onClick={() => setFilter('expense')}
-          className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === 'expense' ? 'bg-rose-500 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}
-        >
-          지출만
-        </button>
-      </section>
+      {/* Grid Layout for Desktop */}
+      <div className={`${isDesktop ? 'grid grid-cols-2 gap-6' : 'block'}`}>
+        {/* Left Column: Transactions */}
+        <div>
+          {/* Filter & Search */}
+          <section className="flex gap-2 mb-6 overflow-x-auto no-scrollbar py-1">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === 'all' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}
+            >
+              전체
+            </button>
+            <button
+              onClick={() => setFilter('income')}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === 'income' ? 'bg-emerald-500 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}
+            >
+              수입만
+            </button>
+            <button
+              onClick={() => setFilter('expense')}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === 'expense' ? 'bg-rose-500 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}
+            >
+              지출만
+            </button>
+          </section>
 
-      {/* Transaction List by Date */}
-      <section className="space-y-6">
-        {transactions.length === 0 ? (
-          <div className="py-20 flex flex-col items-center text-slate-300">
-            <Search size={48} className="mb-4 opacity-20" />
-            <p className="font-bold">기록된 거래 내역이 없습니다</p>
-          </div>
-        ) : (
-          Object.entries(groupedTransactions)
-            .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-            .map(([date, dayTransactions]) => {
-              const dailyStats = getDailyStats(dayTransactions);
-              const displayDate = new Date(date + 'T00:00:00').toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'short'
-              });
-              return (
+          {/* Transaction List by Date */}
+          <section className="space-y-6">
+            {transactions.length === 0 ? (
+              <div className="py-20 flex flex-col items-center text-slate-300">
+                <Search size={48} className="mb-4 opacity-20" />
+                <p className="font-bold">기록된 거래 내역이 없습니다</p>
+              </div>
+            ) : (
+              Object.entries(groupedTransactions)
+                .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+                .map(([date, dayTransactions]) => {
+                  const dailyStats = getDailyStats(dayTransactions);
+                  const displayDate = new Date(date + 'T00:00:00').toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'short'
+                  });
+                  return (
                 <div key={date}>
                   {/* Date Header */}
-                  <div className="px-2 mb-3">
+                  <div
+                    onClick={() => handleDateClick(date)}
+                    className={`px-2 mb-3 cursor-pointer transition-colors ${
+                      selectedDate === date && isDesktop
+                        ? 'bg-indigo-50 rounded-lg p-2 -mx-2'
+                        : ''
+                    }`}
+                  >
                     <h3 className="text-sm font-bold text-slate-700">{displayDate}</h3>
                   </div>
 
@@ -212,7 +271,12 @@ const Household: React.FC = () => {
                       return (
                         <div
                           key={transaction.id}
-                          className="group bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between transition-all hover:shadow-md hover:border-indigo-100"
+                          onClick={() => handleTransactionClick(transaction)}
+                          className={`group bg-white p-4 rounded-2xl shadow-sm border flex items-center justify-between transition-all hover:shadow-md cursor-pointer ${
+                            selectedDate === getDateString(transaction.date) && isDesktop
+                              ? 'border-indigo-500 ring-2 ring-indigo-100'
+                              : 'border-slate-100 hover:border-indigo-100'
+                          }`}
                         >
                           <div className="flex items-center gap-4">
                             <div
@@ -280,10 +344,25 @@ const Household: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              );
-            })
+                  );
+                })
+            )}
+            </section>
+          </div>
+
+        {/* Right Column: Daily Analysis (Desktop Only) */}
+        {isDesktop && selectedDate && (
+          <div className="sticky top-6 h-[calc(100vh-8rem)]">
+            <DailyAnalysis
+              selectedDate={selectedDate}
+              transactions={transactions}
+              categories={categories}
+              isMobile={false}
+              selectedTransaction={selectedTransaction}
+            />
+          </div>
         )}
-      </section>
+      </div>
 
       {/* Floating Action Button */}
       <button 
@@ -293,10 +372,22 @@ const Household: React.FC = () => {
         <Plus size={28} strokeWidth={3} />
       </button>
 
+      {/* Mobile Bottom Sheet */}
+      {!isDesktop && showAnalysisSheet && selectedDate && (
+        <DailyAnalysis
+          selectedDate={selectedDate}
+          transactions={transactions}
+          categories={categories}
+          isMobile={true}
+          onClose={() => setShowAnalysisSheet(false)}
+          selectedTransaction={selectedTransaction}
+        />
+      )}
+
       {/* Modal */}
       {isFormOpen && (
-        <TransactionForm 
-          onClose={() => setIsFormOpen(false)} 
+        <TransactionForm
+          onClose={() => setIsFormOpen(false)}
           onSave={fetchTransactions}
           initialData={editingTransaction}
         />
