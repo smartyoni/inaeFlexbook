@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Edit2, Lock, RefreshCw, FileText, MoreVertical, X } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, Edit2, Lock, RefreshCw, FileText, MoreVertical, X, GripVertical } from 'lucide-react';
 
 interface ChecklistItem {
   id: string;
@@ -26,6 +26,8 @@ const Checklist: React.FC = () => {
   const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingItemText, setEditingItemText] = useState('');
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
 
   // Load from localStorage
   useEffect(() => {
@@ -157,6 +159,51 @@ const Checklist: React.FC = () => {
     setEditingItemId(null);
   };
 
+  const handleItemDragStart = (e: React.DragEvent, cardId: string, itemId: string) => {
+    setDraggedItemId(itemId);
+    setDraggedCardId(cardId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleItemDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleItemDrop = (e: React.DragEvent, cardId: string, targetItemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedItemId || !draggedCardId || draggedCardId !== cardId || draggedItemId === targetItemId) {
+      setDraggedItemId(null);
+      setDraggedCardId(null);
+      return;
+    }
+
+    setCards(cards.map(card => {
+      if (card.id !== cardId) return card;
+
+      const items = [...card.items];
+      const draggedIndex = items.findIndex(i => i.id === draggedItemId);
+      const targetIndex = items.findIndex(i => i.id === targetItemId);
+
+      if (draggedIndex === -1 || targetIndex === -1) return card;
+
+      // Swap items
+      [items[draggedIndex], items[targetIndex]] = [items[targetIndex], items[draggedIndex]];
+
+      return { ...card, items };
+    }));
+
+    setDraggedItemId(null);
+    setDraggedCardId(null);
+  };
+
+  const handleItemDragEnd = () => {
+    setDraggedItemId(null);
+    setDraggedCardId(null);
+  };
+
   return (
     <div className="max-w-full mx-auto px-6 pt-6 pb-12">
       <header className="mb-4">
@@ -226,16 +273,27 @@ const Checklist: React.FC = () => {
                 <p className="text-xs text-slate-300 text-center py-4">항목을 추가해보세요</p>
               ) : (
                 card.items.map((item) => (
-                  <div key={item.id} className="flex flex-col gap-1 group border-b border-slate-100 pb-2 last:border-b-0">
+                  <div
+                    key={item.id}
+                    draggable
+                    onDragStart={(e) => handleItemDragStart(e, card.id, item.id)}
+                    onDragOver={handleItemDragOver}
+                    onDrop={(e) => handleItemDrop(e, card.id, item.id)}
+                    onDragEnd={handleItemDragEnd}
+                    className={`flex flex-col gap-1 group border-b border-slate-100 pb-1 last:border-b-0 transition-all rounded px-1.5 py-1 cursor-move ${
+                      draggedItemId === item.id ? 'bg-slate-100 opacity-50' : 'hover:bg-slate-50'
+                    }`}
+                  >
                     <div className="flex items-start gap-2">
+                      <GripVertical size={12} className="flex-shrink-0 text-slate-300 mt-0.5" />
                       <button
                         onClick={() => toggleItemCompletion(card.id, item.id)}
-                        className="flex-shrink-0 mt-1 text-slate-400 hover:text-indigo-600 transition-colors"
+                        className="flex-shrink-0 mt-0.5 text-slate-400 hover:text-indigo-600 transition-colors"
                       >
                         {item.completed ? (
-                          <CheckCircle2 size={16} className="text-indigo-600" />
+                          <CheckCircle2 size={14} className="text-indigo-600" />
                         ) : (
-                          <Circle size={16} />
+                          <Circle size={14} />
                         )}
                       </button>
                       <div className="flex-1 min-w-0">
