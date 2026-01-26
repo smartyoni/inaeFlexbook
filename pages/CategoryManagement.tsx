@@ -95,75 +95,73 @@ const CategoryManagement: React.FC = () => {
 
   const handleDragStart = (e: React.DragEvent, categoryId: string) => {
     setDraggedCategoryId(categoryId);
-    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer!.effectAllowed = 'move';
+    e.dataTransfer!.setData('text/plain', categoryId);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer!.dropEffect = 'move';
   };
 
   const handleDrop = async (e: React.DragEvent, targetCategoryId: string) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!draggedCategoryId || draggedCategoryId === targetCategoryId) {
+    const sourceId = draggedCategoryId;
+
+    if (!sourceId || sourceId === targetCategoryId) {
       setDraggedCategoryId(null);
       return;
     }
 
-    const draggedCategory = categories.find(c => c.id === draggedCategoryId);
-    const targetCategory = categories.find(c => c.id === targetCategoryId);
+    const sourceCat = categories.find(c => c.id === sourceId);
+    const targetCat = categories.find(c => c.id === targetCategoryId);
 
-    if (!draggedCategory || !targetCategory || draggedCategory.type !== targetCategory.type) {
+    if (!sourceCat || !targetCat || sourceCat.type !== targetCat.type) {
       setDraggedCategoryId(null);
       return;
     }
 
+    // Get same type categories
+    const sameType = categories.filter(c => c.type === sourceCat.type);
+    const sourceIdx = sameType.findIndex(c => c.id === sourceId);
+    const targetIdx = sameType.findIndex(c => c.id === targetCategoryId);
+
+    if (sourceIdx === -1 || targetIdx === -1) {
+      setDraggedCategoryId(null);
+      return;
+    }
+
+    // Swap in array
+    const newSameType = [...sameType];
+    [newSameType[sourceIdx], newSameType[targetIdx]] = [newSameType[targetIdx], newSameType[sourceIdx]];
+
+    // Update order field
+    newSameType.forEach((cat, idx) => {
+      cat.order = idx;
+    });
+
+    // Update full categories list
+    const newCategories = categories.map(cat => {
+      const updated = newSameType.find(c => c.id === cat.id);
+      return updated || cat;
+    });
+
+    setCategories(newCategories);
+    setDraggedCategoryId(null);
+
+    // Save to Firestore
     try {
-      // Get filtered categories of same type, sorted by current order
-      const filteredCategories = categories
-        .filter(c => c.type === draggedCategory.type)
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      const draggedIndex = filteredCategories.findIndex(c => c.id === draggedCategoryId);
-      const targetIndex = filteredCategories.findIndex(c => c.id === targetCategoryId);
-
-      if (draggedIndex === -1 || targetIndex === -1) {
-        setDraggedCategoryId(null);
-        return;
-      }
-
-      // Create new array with swapped items
-      const reorderedCategories = [...filteredCategories];
-      [reorderedCategories[draggedIndex], reorderedCategories[targetIndex]] = [
-        reorderedCategories[targetIndex],
-        reorderedCategories[draggedIndex]
-      ];
-
-      // Update all categories with new order values
-      const updatedCategories = categories.map(cat => {
-        const sameTypeIndex = reorderedCategories.findIndex(c => c.id === cat.id);
-        if (sameTypeIndex !== -1) {
-          return { ...cat, order: sameTypeIndex };
-        }
-        return cat;
-      });
-
-      setCategories(updatedCategories);
-      setDraggedCategoryId(null);
-
-      // Save to Firestore
-      for (const cat of reorderedCategories) {
-        const updatedCat = updatedCategories.find(c => c.id === cat.id);
-        if (updatedCat) {
-          await firestoreService.updateCategory(cat.id, updatedCat);
-        }
+      for (const cat of newSameType) {
+        await firestoreService.updateCategory(cat.id, {
+          ...cat,
+          order: cat.order
+        });
       }
     } catch (error) {
       console.error('Error updating order:', error);
-      setDraggedCategoryId(null);
-      fetchCategories();
+      await fetchCategories();
     }
   };
 
