@@ -20,7 +20,16 @@ const ProjectDetail: React.FC = () => {
         setProject(proj);
 
         const trans = await firestoreService.getTransactionsByProjectId(id);
-        setTransactions(trans.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        // Helper to convert dates for sorting
+        const getDateForSort = (date: any): Date => {
+          if (typeof date === 'string') {
+            return new Date(date);
+          } else if (date && typeof date === 'object' && 'toDate' in date) {
+            return (date as any).toDate();
+          }
+          return new Date(date);
+        };
+        setTransactions(trans.sort((a, b) => getDateForSort(b.date).getTime() - getDateForSort(a.date).getTime()));
       } catch (error) {
         console.error('Error fetching project details:', error);
       }
@@ -29,6 +38,16 @@ const ProjectDetail: React.FC = () => {
   }, [id, navigate]);
 
   if (!project) return null;
+
+  // Helper to convert Firestore Timestamp to Date
+  const getDate = (date: any): Date => {
+    if (typeof date === 'string') {
+      return new Date(date);
+    } else if (date && typeof date === 'object' && 'toDate' in date) {
+      return (date as any).toDate();
+    }
+    return new Date(date);
+  };
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
@@ -96,19 +115,25 @@ const ProjectDetail: React.FC = () => {
             <p className="text-sm font-bold">연결된 내역이 없습니다</p>
           </div>
         ) : (
-          transactions.map(t => (
-            <div key={t.id} className="bg-white p-4 rounded-2xl border border-slate-50 shadow-sm flex items-center justify-between">
-              <div>
-                <h4 className="font-bold text-slate-800 text-sm">{t.description}</h4>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  {new Date(t.date).toLocaleDateString()}
-                </span>
+          transactions.map(t => {
+            const txDate = getDate(t.date);
+            const dateStr = txDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            const timeStr = txDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+            return (
+              <div key={t.id} className="bg-white p-4 rounded-2xl border border-slate-50 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-bold text-slate-800 text-sm">{t.description}</h4>
+                  <span className={`font-black text-sm ${t.type === 'income' ? 'text-emerald-500' : 'text-slate-800'}`}>
+                    {t.type === 'income' ? '+' : '-'} ₩{t.amount.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500 font-medium">{dateStr}</span>
+                  <span className="text-[11px] text-slate-400">{timeStr}</span>
+                </div>
               </div>
-              <span className={`font-black text-sm ${t.type === 'income' ? 'text-emerald-500' : 'text-slate-800'}`}>
-                {t.type === 'income' ? '+' : '-'} ₩{t.amount.toLocaleString()}
-              </span>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
