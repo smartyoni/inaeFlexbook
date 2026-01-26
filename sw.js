@@ -21,21 +21,38 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
+// Fetch event - network first, fallback to cache (app resources only)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
   // Skip non-GET requests
   if (request.method !== 'GET') {
     return;
   }
 
-  // Network first strategy
+  // Skip external resources (cross-origin)
+  // Only cache same-origin requests (app resources)
+  if (url.origin !== self.location.origin) {
+    // Let external requests (Firebase, Google Fonts, etc.) pass through
+    return;
+  }
+
+  // Skip Firebase/Firestore requests (even if same-origin due to proxy)
+  if (
+    url.pathname.includes('firestore.googleapis.com') ||
+    url.pathname.includes('firebase') ||
+    url.pathname.includes('googleapis.com')
+  ) {
+    return;
+  }
+
+  // Network first strategy for app resources
   event.respondWith(
     fetch(request)
       .then((response) => {
-        // Don't cache non-successful responses
-        if (!response || response.status !== 200) {
+        // Don't cache non-successful responses or opaque responses
+        if (!response || response.status !== 200 || response.type === 'opaque') {
           return response;
         }
 
@@ -48,17 +65,25 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // Fallback to cache for offline
+        // Fallback to cache for offline (app resources only)
         return caches.match(request).then((cached) => {
           if (cached) {
             return cached;
           }
-          // If offline and no cache, return a simple offline page
+          // If offline and no cache, return a simple offline page for documents
           if (request.destination === 'document') {
-            return caches.match('/inaeFlexbook/index.html').catch(() => {
-              return new Response('Offline');
+            return caches.match('/inaeFlexbook/index.html').then((indexCache) => {
+              return indexCache || new Response('Offline - Please check your connection', {
+                headers: { 'Content-Type': 'text/plain' }
+              });
             });
           }
+          // For other resources, return a generic error response
+          return new Response('Resource not available offline', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'text/plain' }
+          });
         });
       })
   );
