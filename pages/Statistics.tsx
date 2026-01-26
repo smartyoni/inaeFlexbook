@@ -24,6 +24,8 @@ const Checklist: React.FC = () => {
   const [editingItemMemoId, setEditingItemMemoId] = useState<string | null>(null);
   const [editingItemMemoText, setEditingItemMemoText] = useState('');
   const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItemText, setEditingItemText] = useState('');
 
   // Load from localStorage
   useEffect(() => {
@@ -140,6 +142,21 @@ const Checklist: React.FC = () => {
     ));
   };
 
+  const updateItemText = (cardId: string, itemId: string, text: string) => {
+    if (!text.trim()) return;
+    setCards(cards.map(card =>
+      card.id === cardId
+        ? {
+            ...card,
+            items: card.items.map(item =>
+              item.id === itemId ? { ...item, text } : item
+            )
+          }
+        : card
+    ));
+    setEditingItemId(null);
+  };
+
   return (
     <div className="max-w-full mx-auto px-6 pt-6 pb-12">
       <header className="mb-4">
@@ -222,15 +239,37 @@ const Checklist: React.FC = () => {
                         )}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <span
-                          className={`flex-1 text-xs transition-all line-clamp-2 ${
-                            item.completed
-                              ? 'line-through text-slate-400'
-                              : 'text-slate-700'
-                          }`}
-                        >
-                          {item.text}
-                        </span>
+                        {editingItemId === item.id ? (
+                          <input
+                            autoFocus
+                            type="text"
+                            value={editingItemText}
+                            onChange={(e) => setEditingItemText(e.target.value)}
+                            onBlur={() => updateItemText(card.id, item.id, editingItemText)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                updateItemText(card.id, item.id, editingItemText);
+                              } else if (e.key === 'Escape') {
+                                setEditingItemId(null);
+                              }
+                            }}
+                            className="w-full px-2 py-1 text-xs border border-indigo-500 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-indigo-50"
+                          />
+                        ) : (
+                          <span
+                            onDoubleClick={() => {
+                              setEditingItemId(item.id);
+                              setEditingItemText(item.text);
+                            }}
+                            className={`flex-1 text-xs transition-all line-clamp-2 cursor-text ${
+                              item.completed
+                                ? 'line-through text-slate-400'
+                                : 'text-slate-700'
+                            }`}
+                          >
+                            {item.text}
+                          </span>
+                        )}
                         {item.memo && (
                           <div className="text-[10px] text-slate-500 bg-slate-50 p-1.5 rounded mt-1">
                             {item.memo}
