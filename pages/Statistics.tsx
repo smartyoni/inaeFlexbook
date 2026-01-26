@@ -1,131 +1,286 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, Edit2, Lock, RefreshCw } from 'lucide-react';
 
 interface ChecklistItem {
   id: string;
   text: string;
   completed: boolean;
+}
+
+interface ChecklistCard {
+  id: string;
+  title: string;
+  items: ChecklistItem[];
   createdAt: string;
 }
 
 const Checklist: React.FC = () => {
-  const [items, setItems] = useState<ChecklistItem[]>([]);
-  const [input, setInput] = useState('');
+  const [cards, setCards] = useState<ChecklistCard[]>([]);
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [newItemText, setNewItemText] = useState<Record<string, string>>({});
 
   // Load from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('checklist');
+    const saved = localStorage.getItem('checklistCards');
     if (saved) {
-      setItems(JSON.parse(saved));
+      setCards(JSON.parse(saved));
     }
   }, []);
 
   // Save to localStorage
   useEffect(() => {
-    localStorage.setItem('checklist', JSON.stringify(items));
-  }, [items]);
+    localStorage.setItem('checklistCards', JSON.stringify(cards));
+  }, [cards]);
 
-  const addItem = () => {
-    if (input.trim()) {
-      setItems([
-        ...items,
-        {
-          id: Date.now().toString(),
-          text: input,
-          completed: false,
-          createdAt: new Date().toISOString()
-        }
-      ]);
-      setInput('');
+  const addCard = () => {
+    if (cards.length >= 20) {
+      alert('최대 20개의 카드만 생성할 수 있습니다.');
+      return;
+    }
+    const newCard: ChecklistCard = {
+      id: Date.now().toString(),
+      title: '새 카테고리',
+      items: [],
+      createdAt: new Date().toISOString()
+    };
+    setCards([...cards, newCard]);
+  };
+
+  const deleteCard = (id: string) => {
+    if (confirm('이 카드를 삭제하시겠습니까?')) {
+      setCards(cards.filter(card => card.id !== id));
     }
   };
 
-  const toggleItem = (id: string) => {
-    setItems(items.map(item =>
-      item.id === id ? { ...item, completed: !item.completed } : item
+  const updateCardTitle = (id: string, newTitle: string) => {
+    setCards(cards.map(card =>
+      card.id === id ? { ...card, title: newTitle } : card
     ));
   };
 
-  const deleteItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+  const addItemToCard = (cardId: string, itemText: string) => {
+    if (!itemText.trim()) return;
+    setCards(cards.map(card =>
+      card.id === cardId
+        ? {
+            ...card,
+            items: [
+              ...card.items,
+              {
+                id: Date.now().toString(),
+                text: itemText,
+                completed: false
+              }
+            ]
+          }
+        : card
+    ));
+    setNewItemText({ ...newItemText, [cardId]: '' });
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      addItem();
-    }
+  const toggleItemCompletion = (cardId: string, itemId: string) => {
+    setCards(cards.map(card =>
+      card.id === cardId
+        ? {
+            ...card,
+            items: card.items.map(item =>
+              item.id === itemId ? { ...item, completed: !item.completed } : item
+            )
+          }
+        : card
+    ));
   };
 
-  const completedCount = items.filter(item => item.completed).length;
+  const deleteItem = (cardId: string, itemId: string) => {
+    setCards(cards.map(card =>
+      card.id === cardId
+        ? {
+            ...card,
+            items: card.items.filter(item => item.id !== itemId)
+          }
+        : card
+    ));
+  };
+
+  const clearCompletedItems = (cardId: string) => {
+    setCards(cards.map(card =>
+      card.id === cardId
+        ? {
+            ...card,
+            items: card.items.filter(item => !item.completed)
+          }
+        : card
+    ));
+  };
+
+  const completedCount = (cardId: string) => {
+    return cards.find(c => c.id === cardId)?.items.filter(i => i.completed).length || 0;
+  };
+
+  const totalItems = (cardId: string) => {
+    return cards.find(c => c.id === cardId)?.items.length || 0;
+  };
 
   return (
-    <div className="max-w-xl mx-auto px-4 pt-6 pb-12">
+    <div className="max-w-full mx-auto px-6 pt-6 pb-12">
       <header className="mb-8">
         <h1 className="text-2xl font-black text-slate-800 tracking-tight">체크리스트</h1>
         <p className="text-sm text-slate-400 font-medium mt-1">
-          {completedCount}/{items.length}
+          {cards.length}/20 카드
         </p>
       </header>
 
-      {/* Input Section */}
-      <div className="flex gap-2 mb-6">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="새 항목 입력..."
-          className="flex-1 px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
+      {/* Add Card Button */}
+      {cards.length < 20 && (
         <button
-          onClick={addItem}
-          className="px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-bold flex items-center gap-2"
+          onClick={addCard}
+          className="mb-6 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-bold flex items-center gap-2"
         >
           <Plus size={20} />
+          새 카드 추가
         </button>
-      </div>
+      )}
 
-      {/* Items List */}
-      <div className="space-y-2">
-        {items.length === 0 ? (
-          <div className="py-12 flex flex-col items-center text-slate-300 text-center">
-            <Circle size={48} className="mb-4 opacity-20" />
-            <p className="font-bold">항목을 추가해보세요</p>
-          </div>
-        ) : (
-          items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 transition-colors group"
-            >
-              <button
-                onClick={() => toggleItem(item.id)}
-                className="flex-shrink-0 text-slate-400 hover:text-indigo-600 transition-colors"
-              >
-                {item.completed ? (
-                  <CheckCircle2 size={24} className="text-indigo-600" />
-                ) : (
-                  <Circle size={24} />
-                )}
-              </button>
-              <span
-                className={`flex-1 text-sm transition-all ${
-                  item.completed
-                    ? 'line-through text-slate-400'
-                    : 'text-slate-700 font-medium'
-                }`}
-              >
-                {item.text}
-              </span>
-              <button
-                onClick={() => deleteItem(item.id)}
-                className="flex-shrink-0 p-2 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-all"
-              >
-                <Trash2 size={18} />
-              </button>
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {cards.map((card) => (
+          <div
+            key={card.id}
+            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col h-96"
+          >
+            {/* Card Header */}
+            <div className="p-4 border-b border-slate-100 flex-shrink-0">
+              {editingCardId === card.id ? (
+                <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    className="flex-1 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    onClick={() => {
+                      updateCardTitle(card.id, editingTitle);
+                      setEditingCardId(null);
+                    }}
+                    className="px-3 py-1 bg-indigo-600 text-white text-xs rounded font-bold hover:bg-indigo-700"
+                  >
+                    저장
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-slate-800 text-sm line-clamp-2">{card.title}</h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {completedCount(card.id)}/{totalItems(card.id)}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        setEditingCardId(card.id);
+                        setEditingTitle(card.title);
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button
+                      onClick={() => deleteCard(card.id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          ))
+
+            {/* Items List */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {card.items.length === 0 ? (
+                <p className="text-xs text-slate-300 text-center py-4">항목을 추가해보세요</p>
+              ) : (
+                card.items.map((item) => (
+                  <div key={item.id} className="flex items-start gap-2 group">
+                    <button
+                      onClick={() => toggleItemCompletion(card.id, item.id)}
+                      className="flex-shrink-0 mt-1 text-slate-400 hover:text-indigo-600 transition-colors"
+                    >
+                      {item.completed ? (
+                        <CheckCircle2 size={16} className="text-indigo-600" />
+                      ) : (
+                        <Circle size={16} />
+                      )}
+                    </button>
+                    <span
+                      className={`flex-1 text-xs transition-all line-clamp-2 ${
+                        item.completed
+                          ? 'line-through text-slate-400'
+                          : 'text-slate-700'
+                      }`}
+                    >
+                      {item.text}
+                    </span>
+                    <button
+                      onClick={() => deleteItem(card.id, item.id)}
+                      className="flex-shrink-0 p-1 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Add Item Input */}
+            <div className="p-3 border-t border-slate-100 flex-shrink-0 space-y-2">
+              <input
+                type="text"
+                value={newItemText[card.id] || ''}
+                onChange={(e) => setNewItemText({ ...newItemText, [card.id]: e.target.value })}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    addItemToCard(card.id, newItemText[card.id] || '');
+                  }
+                }}
+                placeholder="항목 추가..."
+                className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => addItemToCard(card.id, newItemText[card.id] || '')}
+                  className="flex-1 px-2 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors font-bold flex items-center justify-center gap-1"
+                >
+                  <Plus size={14} />
+                  추가
+                </button>
+                {totalItems(card.id) > 0 && completedCount(card.id) > 0 && (
+                  <button
+                    onClick={() => clearCompletedItems(card.id)}
+                    className="px-2 py-1.5 bg-slate-100 text-slate-600 text-xs rounded-lg hover:bg-slate-200 transition-colors font-bold"
+                  >
+                    정리
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Add Card Placeholder */}
+        {cards.length < 20 && (
+          <button
+            onClick={addCard}
+            className="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-100 transition-colors flex items-center justify-center h-96 text-slate-400 hover:text-slate-600 font-bold text-sm"
+          >
+            <Plus size={24} className="mr-2" />
+            카드 추가
+          </button>
         )}
       </div>
     </div>
