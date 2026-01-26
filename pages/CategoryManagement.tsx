@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Edit2, Trash2, X, Check, Grid } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, X, Check, Grid, GripVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Category, TransactionType } from '../types';
 import * as firestoreService from '../firestore-service';
@@ -10,7 +10,8 @@ const CategoryManagement: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  
+  const [draggedCategoryId, setDraggedCategoryId] = useState<string | null>(null);
+
   // Form states
   const [name, setName] = useState('');
   const [type, setType] = useState<TransactionType>('expense');
@@ -92,6 +93,75 @@ const CategoryManagement: React.FC = () => {
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, categoryId: string) => {
+    setDraggedCategoryId(categoryId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetCategoryId: string) => {
+    e.preventDefault();
+    if (!draggedCategoryId || draggedCategoryId === targetCategoryId) {
+      setDraggedCategoryId(null);
+      return;
+    }
+
+    const draggedCategory = categories.find(c => c.id === draggedCategoryId);
+    const targetCategory = categories.find(c => c.id === targetCategoryId);
+
+    if (!draggedCategory || !targetCategory || draggedCategory.type !== targetCategory.type) {
+      setDraggedCategoryId(null);
+      return;
+    }
+
+    // Get filtered categories of same type
+    const filteredCategories = categories.filter(c => c.type === draggedCategory.type);
+    const draggedIndex = filteredCategories.findIndex(c => c.id === draggedCategoryId);
+    const targetIndex = filteredCategories.findIndex(c => c.id === targetCategoryId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedCategoryId(null);
+      return;
+    }
+
+    // Swap order values
+    const newCategories = [...categories];
+    const newFilteredCategories = [...filteredCategories];
+    [newFilteredCategories[draggedIndex], newFilteredCategories[targetIndex]] = [
+      newFilteredCategories[targetIndex],
+      newFilteredCategories[draggedIndex]
+    ];
+
+    // Update order for all filtered categories
+    newFilteredCategories.forEach((cat, index) => {
+      const fullIndex = newCategories.findIndex(c => c.id === cat.id);
+      if (fullIndex !== -1) {
+        newCategories[fullIndex] = { ...cat, order: index };
+      }
+    });
+
+    setCategories(newCategories);
+    setDraggedCategoryId(null);
+
+    // Save to Firestore
+    try {
+      for (const cat of newFilteredCategories) {
+        await firestoreService.updateCategory(cat.id, { ...cat, order: cat.order });
+      }
+    } catch (error) {
+      console.error('Error updating order:', error);
+      fetchCategories(); // Revert on error
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedCategoryId(null);
+  };
+
   return (
     <div className="max-w-xl mx-auto px-4 pt-6 pb-12">
       <header className="flex items-center gap-4 mb-8">
@@ -120,12 +190,22 @@ const CategoryManagement: React.FC = () => {
               ) : (
                 <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
                   {filtered.map((cat, idx) => (
-                    <div 
-                      key={cat.id} 
-                      className={`flex items-center justify-between p-4 ${idx !== filtered.length - 1 ? 'border-b border-slate-50' : ''}`}
+                    <div
+                      key={cat.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, cat.id)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, cat.id)}
+                      onDragEnd={handleDragEnd}
+                      className={`flex items-center justify-between p-4 transition-all cursor-move ${
+                        draggedCategoryId === cat.id
+                          ? 'bg-slate-100 opacity-50'
+                          : 'hover:bg-slate-50'
+                      } ${idx !== filtered.length - 1 ? 'border-b border-slate-50' : ''}`}
                     >
                       <div className="flex items-center gap-4">
-                        <div 
+                        <GripVertical size={16} className="text-slate-300" />
+                        <div
                           className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-sm"
                           style={{ backgroundColor: cat.color }}
                         >
@@ -134,14 +214,14 @@ const CategoryManagement: React.FC = () => {
                         <span className="font-bold text-slate-700">{cat.name}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button 
-                          onClick={() => handleOpenEdit(cat)} 
+                        <button
+                          onClick={() => handleOpenEdit(cat)}
                           className="p-2 text-slate-300 hover:text-indigo-600 transition-colors"
                         >
                           <Edit2 size={16} />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(cat.id)} 
+                        <button
+                          onClick={() => handleDelete(cat.id)}
                           className="p-2 text-slate-300 hover:text-rose-600 transition-colors"
                         >
                           <Trash2 size={16} />
