@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Edit2, Lock, RefreshCw, FileText, Check } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, Edit2, Lock, RefreshCw, FileText, Check, MoreVertical, X } from 'lucide-react';
 
 interface ChecklistItem {
   id: string;
@@ -26,6 +26,7 @@ const Checklist: React.FC = () => {
   const [editingMemoText, setEditingMemoText] = useState('');
   const [editingItemMemoId, setEditingItemMemoId] = useState<string | null>(null);
   const [editingItemMemoText, setEditingItemMemoText] = useState('');
+  const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null);
 
   // Load from localStorage
   useEffect(() => {
@@ -245,22 +246,45 @@ const Checklist: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      <div className="flex gap-1 flex-shrink-0">
+                      <div className="relative flex-shrink-0">
                         <button
-                          onClick={() => {
-                            setEditingItemMemoId(item.id);
-                            setEditingItemMemoText(item.memo || '');
-                          }}
-                          className="p-1 text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-all"
+                          onClick={() => setOpenMenuItemId(openMenuItemId === item.id ? null : item.id)}
+                          className="p-1.5 text-slate-600 hover:text-slate-800 transition-colors"
                         >
-                          <FileText size={12} />
+                          <MoreVertical size={14} />
                         </button>
-                        <button
-                          onClick={() => deleteItem(card.id, item.id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-all"
-                        >
-                          <Trash2 size={12} />
-                        </button>
+                        {openMenuItemId === item.id && (
+                          <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-max">
+                            <button
+                              onClick={() => {
+                                setEditingItemMemoId(item.id);
+                                setEditingItemMemoText(item.memo || '');
+                                setOpenMenuItemId(null);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors flex items-center gap-2"
+                            >
+                              <FileText size={12} />
+                              메모작성
+                            </button>
+                            <button
+                              onClick={() => {
+                                deleteItem(card.id, item.id);
+                                setOpenMenuItemId(null);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-600 transition-colors flex items-center gap-2 border-t border-slate-100"
+                            >
+                              <Trash2 size={12} />
+                              삭제
+                            </button>
+                            <button
+                              onClick={() => setOpenMenuItemId(null)}
+                              className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2 border-t border-slate-100"
+                            >
+                              <X size={12} />
+                              취소
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
