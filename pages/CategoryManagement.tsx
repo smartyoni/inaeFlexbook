@@ -153,25 +153,20 @@ const CategoryManagement: React.FC = () => {
 
     console.log('New order:', orderedSameType.map(c => ({ name: c.name, order: c.order })));
 
-    // Update full categories list
-    const newCategories = categories.map(cat => {
-      const updated = orderedSameType.find(c => c.id === cat.id);
-      return updated || cat;
-    });
-
-    setCategories(newCategories);
-    setDraggedCategoryId(null);
-
     // Save to Firestore
     try {
       for (const cat of orderedSameType) {
         await firestoreService.updateCategory(cat.id, cat);
       }
       console.log('Successfully updated order in Firestore');
+      // Refresh categories from database
+      await fetchCategories();
     } catch (error) {
       console.error('Error updating order:', error);
       await fetchCategories();
     }
+
+    setDraggedCategoryId(null);
   };
 
   const handleDragEnd = () => {
