@@ -6,6 +6,7 @@ interface ChecklistItem {
   id: string;
   text: string;
   completed: boolean;
+  memo?: string;
 }
 
 interface ChecklistCard {
@@ -23,6 +24,8 @@ const Checklist: React.FC = () => {
   const [newItemText, setNewItemText] = useState<Record<string, string>>({});
   const [editingMemoCardId, setEditingMemoCardId] = useState<string | null>(null);
   const [editingMemoText, setEditingMemoText] = useState('');
+  const [editingItemMemoId, setEditingItemMemoId] = useState<string | null>(null);
+  const [editingItemMemoText, setEditingItemMemoText] = useState('');
 
   // Load from localStorage
   useEffect(() => {
@@ -132,6 +135,19 @@ const Checklist: React.FC = () => {
     ));
   };
 
+  const updateItemMemo = (cardId: string, itemId: string, memo: string) => {
+    setCards(cards.map(card =>
+      card.id === cardId
+        ? {
+            ...card,
+            items: card.items.map(item =>
+              item.id === itemId ? { ...item, memo } : item
+            )
+          }
+        : card
+    ));
+  };
+
   return (
     <div className="max-w-full mx-auto px-6 pt-6 pb-12">
       <header className="mb-4">
@@ -201,32 +217,52 @@ const Checklist: React.FC = () => {
                 <p className="text-xs text-slate-300 text-center py-4">항목을 추가해보세요</p>
               ) : (
                 card.items.map((item) => (
-                  <div key={item.id} className="flex items-start gap-2 group">
-                    <button
-                      onClick={() => toggleItemCompletion(card.id, item.id)}
-                      className="flex-shrink-0 mt-1 text-slate-400 hover:text-indigo-600 transition-colors"
-                    >
-                      {item.completed ? (
-                        <CheckCircle2 size={16} className="text-indigo-600" />
-                      ) : (
-                        <Circle size={16} />
-                      )}
-                    </button>
-                    <span
-                      className={`flex-1 text-xs transition-all line-clamp-2 ${
-                        item.completed
-                          ? 'line-through text-slate-400'
-                          : 'text-slate-700'
-                      }`}
-                    >
-                      {item.text}
-                    </span>
-                    <button
-                      onClick={() => deleteItem(card.id, item.id)}
-                      className="flex-shrink-0 p-1 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                  <div key={item.id} className="flex flex-col gap-1 group border-b border-slate-100 pb-2 last:border-b-0">
+                    <div className="flex items-start gap-2">
+                      <button
+                        onClick={() => toggleItemCompletion(card.id, item.id)}
+                        className="flex-shrink-0 mt-1 text-slate-400 hover:text-indigo-600 transition-colors"
+                      >
+                        {item.completed ? (
+                          <CheckCircle2 size={16} className="text-indigo-600" />
+                        ) : (
+                          <Circle size={16} />
+                        )}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <span
+                          className={`flex-1 text-xs transition-all line-clamp-2 ${
+                            item.completed
+                              ? 'line-through text-slate-400'
+                              : 'text-slate-700'
+                          }`}
+                        >
+                          {item.text}
+                        </span>
+                        {item.memo && (
+                          <div className="text-[10px] text-slate-500 bg-slate-50 p-1.5 rounded mt-1">
+                            {item.memo}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => {
+                            setEditingItemMemoId(item.id);
+                            setEditingItemMemoText(item.memo || '');
+                          }}
+                          className="p-1 text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <FileText size={12} />
+                        </button>
+                        <button
+                          onClick={() => deleteItem(card.id, item.id)}
+                          className="p-1 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ))
               )}
@@ -261,6 +297,43 @@ const Checklist: React.FC = () => {
                 >
                   정리
                 </button>
+              )}
+
+              {/* Item Memo Modal */}
+              {editingItemMemoId && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+                  <div className="bg-white rounded-2xl p-4 shadow-2xl w-full max-w-sm">
+                    <h3 className="font-bold text-slate-800 mb-3">항목 메모</h3>
+                    <textarea
+                      autoFocus
+                      value={editingItemMemoText}
+                      onChange={(e) => setEditingItemMemoText(e.target.value)}
+                      className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                      rows={3}
+                      placeholder="메모를 입력하세요..."
+                    />
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => {
+                          const cardId = cards.find(c => c.items.find(i => i.id === editingItemMemoId))?.id;
+                          if (cardId) {
+                            updateItemMemo(cardId, editingItemMemoId, editingItemMemoText);
+                          }
+                          setEditingItemMemoId(null);
+                        }}
+                        className="flex-1 px-2 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors font-bold"
+                      >
+                        저장
+                      </button>
+                      <button
+                        onClick={() => setEditingItemMemoId(null)}
+                        className="flex-1 px-2 py-1.5 bg-slate-100 text-slate-600 text-xs rounded-lg hover:bg-slate-200 transition-colors font-bold"
+                      >
+                        닫기
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* Memo Section */}
