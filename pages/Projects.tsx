@@ -29,7 +29,6 @@ const Projects: React.FC = () => {
 
     try {
       await firestoreService.addProject({
-        id: crypto.randomUUID(),
         name: newProject.name,
         description: newProject.description,
         color: newProject.color,

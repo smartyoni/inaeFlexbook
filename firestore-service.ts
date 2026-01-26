@@ -4,6 +4,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   query,
   where,
@@ -165,9 +166,17 @@ export const getAllProjects = async (): Promise<Project[]> => {
 };
 
 export const getProjectById = async (id: string): Promise<Project | null> => {
-  const q = query(projectsRef, where('id', '==', id));
-  const docs = await getDocs(q);
-  return docs.docs.length > 0 ? docToObject<Project>(docs.docs[0]) : null;
+  try {
+    const docRef = doc(db, 'projects', id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docToObject<Project>(docSnap);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching project by ID:', error);
+    return null;
+  }
 };
 
 // Bank Accounts
