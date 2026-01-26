@@ -1,0 +1,31 @@
+{
+  "name": "FlexBook - Professional Household Finance",
+  "short_name": "FlexBook",
+  "description": "A professional household account book with real-time tracking, statistics, and project management.",
+  "start_url": "./",
+  "scope": "/inaeFlexbook/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0a66ff",
+  "background_color": "#f7f6f5",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
