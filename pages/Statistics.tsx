@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Edit2, Lock, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, Edit2, Lock, RefreshCw, FileText, Check } from 'lucide-react';
 
 interface ChecklistItem {
   id: string;
@@ -12,6 +12,7 @@ interface ChecklistCard {
   id: string;
   title: string;
   items: ChecklistItem[];
+  memo?: string;
   createdAt: string;
 }
 
@@ -20,6 +21,8 @@ const Checklist: React.FC = () => {
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [newItemText, setNewItemText] = useState<Record<string, string>>({});
+  const [editingMemoCardId, setEditingMemoCardId] = useState<string | null>(null);
+  const [editingMemoText, setEditingMemoText] = useState('');
 
   // Load from localStorage
   useEffect(() => {
@@ -121,6 +124,12 @@ const Checklist: React.FC = () => {
 
   const totalItems = (cardId: string) => {
     return cards.find(c => c.id === cardId)?.items.length || 0;
+  };
+
+  const updateCardMemo = (id: string, memo: string) => {
+    setCards(cards.map(card =>
+      card.id === id ? { ...card, memo } : card
+    ));
   };
 
   return (
@@ -267,6 +276,48 @@ const Checklist: React.FC = () => {
                   정리
                 </button>
               )}
+
+              {/* Memo Section */}
+              <div className="border-t border-slate-100 pt-2">
+                {editingMemoCardId === card.id ? (
+                  <div className="space-y-2">
+                    <textarea
+                      autoFocus
+                      value={editingMemoText}
+                      onChange={(e) => setEditingMemoText(e.target.value)}
+                      className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                      rows={3}
+                      placeholder="메모를 입력하세요..."
+                    />
+                    <button
+                      onClick={() => {
+                        updateCardMemo(card.id, editingMemoText);
+                        setEditingMemoCardId(null);
+                      }}
+                      className="w-full px-2 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors font-bold flex items-center justify-center gap-1"
+                    >
+                      <Check size={12} />
+                      저장
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded-lg min-h-[36px] max-h-[60px] overflow-y-auto whitespace-pre-wrap">
+                      {card.memo ? card.memo : '메모 없음'}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingMemoCardId(card.id);
+                        setEditingMemoText(card.memo || '');
+                      }}
+                      className="w-full px-2 py-1.5 bg-slate-100 text-slate-600 text-xs rounded-lg hover:bg-slate-200 transition-colors font-bold flex items-center justify-center gap-1"
+                    >
+                      <FileText size={12} />
+                      메모
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}
