@@ -105,6 +105,8 @@ const CategoryManagement: React.FC = () => {
 
   const handleDrop = async (e: React.DragEvent, targetCategoryId: string) => {
     e.preventDefault();
+    e.stopPropagation();
+
     if (!draggedCategoryId || draggedCategoryId === targetCategoryId) {
       setDraggedCategoryId(null);
       return;
@@ -118,43 +120,50 @@ const CategoryManagement: React.FC = () => {
       return;
     }
 
-    // Get filtered categories of same type
-    const filteredCategories = categories.filter(c => c.type === draggedCategory.type);
-    const draggedIndex = filteredCategories.findIndex(c => c.id === draggedCategoryId);
-    const targetIndex = filteredCategories.findIndex(c => c.id === targetCategoryId);
-
-    if (draggedIndex === -1 || targetIndex === -1) {
-      setDraggedCategoryId(null);
-      return;
-    }
-
-    // Swap order values
-    const newCategories = [...categories];
-    const newFilteredCategories = [...filteredCategories];
-    [newFilteredCategories[draggedIndex], newFilteredCategories[targetIndex]] = [
-      newFilteredCategories[targetIndex],
-      newFilteredCategories[draggedIndex]
-    ];
-
-    // Update order for all filtered categories
-    newFilteredCategories.forEach((cat, index) => {
-      const fullIndex = newCategories.findIndex(c => c.id === cat.id);
-      if (fullIndex !== -1) {
-        newCategories[fullIndex] = { ...cat, order: index };
-      }
-    });
-
-    setCategories(newCategories);
-    setDraggedCategoryId(null);
-
-    // Save to Firestore
     try {
-      for (const cat of newFilteredCategories) {
-        await firestoreService.updateCategory(cat.id, { ...cat, order: cat.order });
+      // Get filtered categories of same type, sorted by current order
+      const filteredCategories = categories
+        .filter(c => c.type === draggedCategory.type)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      const draggedIndex = filteredCategories.findIndex(c => c.id === draggedCategoryId);
+      const targetIndex = filteredCategories.findIndex(c => c.id === targetCategoryId);
+
+      if (draggedIndex === -1 || targetIndex === -1) {
+        setDraggedCategoryId(null);
+        return;
+      }
+
+      // Create new array with swapped items
+      const reorderedCategories = [...filteredCategories];
+      [reorderedCategories[draggedIndex], reorderedCategories[targetIndex]] = [
+        reorderedCategories[targetIndex],
+        reorderedCategories[draggedIndex]
+      ];
+
+      // Update all categories with new order values
+      const updatedCategories = categories.map(cat => {
+        const sameTypeIndex = reorderedCategories.findIndex(c => c.id === cat.id);
+        if (sameTypeIndex !== -1) {
+          return { ...cat, order: sameTypeIndex };
+        }
+        return cat;
+      });
+
+      setCategories(updatedCategories);
+      setDraggedCategoryId(null);
+
+      // Save to Firestore
+      for (const cat of reorderedCategories) {
+        const updatedCat = updatedCategories.find(c => c.id === cat.id);
+        if (updatedCat) {
+          await firestoreService.updateCategory(cat.id, updatedCat);
+        }
       }
     } catch (error) {
       console.error('Error updating order:', error);
-      fetchCategories(); // Revert on error
+      setDraggedCategoryId(null);
+      fetchCategories();
     }
   };
 
