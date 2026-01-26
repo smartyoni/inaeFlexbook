@@ -1,111 +1,135 @@
 
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import * as firestoreService from '../firestore-service';
-import { ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle } from 'lucide-react';
 
-const Statistics: React.FC = () => {
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [data, setData] = useState<any[]>([]);
+interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+}
 
-  const fetchData = async () => {
-    try {
-      const transactions = await firestoreService.getTransactionsByYear(year);
+const Checklist: React.FC = () => {
+  const [items, setItems] = useState<ChecklistItem[]>([]);
+  const [input, setInput] = useState('');
 
-      const monthlyData = Array.from({ length: 12 }, (_, i) => ({
-        month: `${i + 1}월`,
-        income: 0,
-        expense: 0
-      }));
+  // Load from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('checklist');
+    if (saved) {
+      setItems(JSON.parse(saved));
+    }
+  }, []);
 
-      transactions.forEach(t => {
-        const monthIdx = new Date(t.date).getMonth();
-        if (t.type === 'income') monthlyData[monthIdx].income += t.amount;
-        else monthlyData[monthIdx].expense += t.amount;
-      });
+  // Save to localStorage
+  useEffect(() => {
+    localStorage.setItem('checklist', JSON.stringify(items));
+  }, [items]);
 
-      setData(monthlyData);
-    } catch (error) {
-      console.error('Error fetching statistics:', error);
+  const addItem = () => {
+    if (input.trim()) {
+      setItems([
+        ...items,
+        {
+          id: Date.now().toString(),
+          text: input,
+          completed: false,
+          createdAt: new Date().toISOString()
+        }
+      ]);
+      setInput('');
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [year]);
+  const toggleItem = (id: string) => {
+    setItems(items.map(item =>
+      item.id === id ? { ...item, completed: !item.completed } : item
+    ));
+  };
+
+  const deleteItem = (id: string) => {
+    setItems(items.filter(item => item.id !== id));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      addItem();
+    }
+  };
+
+  const completedCount = items.filter(item => item.completed).length;
 
   return (
     <div className="max-w-xl mx-auto px-4 pt-6 pb-12">
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">통계</h1>
-          <p className="text-sm text-slate-400 font-medium">연간 흐름 요약</p>
-        </div>
-        <div className="flex items-center gap-4 bg-white p-1 rounded-full shadow-sm border border-slate-100">
-          <button onClick={() => setYear(year - 1)} className="p-2 hover:bg-slate-50 rounded-full text-slate-400">
-            <ChevronLeft size={20} />
-          </button>
-          <span className="font-bold text-slate-700 min-w-[60px] text-center">{year}년</span>
-          <button onClick={() => setYear(year + 1)} className="p-2 hover:bg-slate-50 rounded-full text-slate-400">
-            <ChevronRight size={20} />
-          </button>
-        </div>
+      <header className="mb-8">
+        <h1 className="text-2xl font-black text-slate-800 tracking-tight">체크리스트</h1>
+        <p className="text-sm text-slate-400 font-medium mt-1">
+          {completedCount}/{items.length}
+        </p>
       </header>
 
-      <div className="space-y-6">
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-500 mb-6 uppercase tracking-widest flex items-center gap-2">
-            <BarChart3 size={16} /> 월별 수입/지출 추이
-          </h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fill: '#94a3b8' }} 
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fill: '#94a3b8' }}
-                  tickFormatter={(val) => `${(val / 10000).toFixed(0)}만`}
-                />
-                <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
-                <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={8} name="수입" />
-                <Bar dataKey="expense" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={8} name="지출" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      {/* Input Section */}
+      <div className="flex gap-2 mb-6">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="새 항목 입력..."
+          className="flex-1 px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+        <button
+          onClick={addItem}
+          className="px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-bold flex items-center gap-2"
+        >
+          <Plus size={20} />
+        </button>
+      </div>
 
-        <div className="bg-indigo-600 p-6 rounded-3xl shadow-xl shadow-indigo-100 text-white">
-          <h3 className="text-xs font-bold opacity-80 uppercase tracking-widest mb-6">연간 총계</h3>
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <span className="block text-[10px] font-bold opacity-60 uppercase mb-1">총 수입</span>
-              <span className="text-xl font-black">₩{data.reduce((s, d) => s + d.income, 0).toLocaleString()}</span>
-            </div>
-            <div>
-              <span className="block text-[10px] font-bold opacity-60 uppercase mb-1">총 지출</span>
-              <span className="text-xl font-black">₩{data.reduce((s, d) => s + d.expense, 0).toLocaleString()}</span>
-            </div>
-            <div className="col-span-2 pt-4 border-t border-white/10">
-              <span className="block text-[10px] font-bold opacity-60 uppercase mb-1">연간 순수익</span>
-              <span className="text-2xl font-black">
-                ₩{(data.reduce((s, d) => s + d.income, 0) - data.reduce((s, d) => s + d.expense, 0)).toLocaleString()}
-              </span>
-            </div>
+      {/* Items List */}
+      <div className="space-y-2">
+        {items.length === 0 ? (
+          <div className="py-12 flex flex-col items-center text-slate-300 text-center">
+            <Circle size={48} className="mb-4 opacity-20" />
+            <p className="font-bold">항목을 추가해보세요</p>
           </div>
-        </div>
+        ) : (
+          items.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 transition-colors group"
+            >
+              <button
+                onClick={() => toggleItem(item.id)}
+                className="flex-shrink-0 text-slate-400 hover:text-indigo-600 transition-colors"
+              >
+                {item.completed ? (
+                  <CheckCircle2 size={24} className="text-indigo-600" />
+                ) : (
+                  <Circle size={24} />
+                )}
+              </button>
+              <span
+                className={`flex-1 text-sm transition-all ${
+                  item.completed
+                    ? 'line-through text-slate-400'
+                    : 'text-slate-700 font-medium'
+                }`}
+              >
+                {item.text}
+              </span>
+              <button
+                onClick={() => deleteItem(item.id)}
+                className="flex-shrink-0 p-2 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-all"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
 };
 
-export default Statistics;
+export default Checklist;
