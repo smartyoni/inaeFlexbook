@@ -385,7 +385,7 @@ const Checklist: React.FC = () => {
                           </span>
                         )}
                         {item.memo && (
-                          <div className="text-[10px] text-slate-500 bg-slate-50 p-1.5 rounded mt-1">
+                          <div className="text-[10px] text-emerald-600 bg-emerald-50 p-1.5 rounded mt-1 line-clamp-1">
                             {item.memo}
                           </div>
                         )}
