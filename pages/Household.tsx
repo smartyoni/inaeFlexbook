@@ -180,7 +180,7 @@ const Household: React.FC = () => {
       <header className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">가계부</h1>
-          <p className="text-sm text-indigo-600 font-medium">나의 천사 김인애를 위해 만들었습니다.</p>
+          <p className="text-sm text-indigo-600 font-medium">💗 우유빛깔 김인애 귀염뽀짝 김인애!!! 💗</p>
         </div>
         <div className="flex items-center gap-4 bg-white p-1 rounded-full shadow-sm border border-slate-100">
           <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-50 rounded-full text-slate-400">
