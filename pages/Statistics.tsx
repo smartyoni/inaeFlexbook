@@ -99,6 +99,22 @@ const Checklist: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [cards]);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!openMenuItemId) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Close menu if clicked outside the menu button or menu content
+      if (!target.closest('[data-menu-button]') && !target.closest('[data-menu-content]')) {
+        setOpenMenuItemId(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openMenuItemId]);
+
   const addCard = () => {
     if (cards.length >= 20) {
       alert('최대 20개의 카드만 생성할 수 있습니다.');
@@ -398,13 +414,14 @@ const Checklist: React.FC = () => {
                       </div>
                       <div className="relative flex-shrink-0">
                         <button
+                          data-menu-button
                           onClick={() => setOpenMenuItemId(openMenuItemId === item.id ? null : item.id)}
                           className="p-1.5 text-slate-600 hover:text-slate-800 transition-colors"
                         >
                           <MoreVertical size={14} />
                         </button>
                         {openMenuItemId === item.id && (
-                          <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-max">
+                          <div data-menu-content className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-max">
                             <button
                               onClick={() => {
                                 setEditingItemMemoId(item.id);
