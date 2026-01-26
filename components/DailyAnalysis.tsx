@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { X, PieChart as PieIcon } from 'lucide-react';
+import { X, PieChart as PieIcon, Edit2, Check } from 'lucide-react';
 import { Transaction, Category, TransactionType } from '../types';
 
 interface DailyAnalysisProps {
@@ -11,6 +11,7 @@ interface DailyAnalysisProps {
   isMobile: boolean;
   onClose?: () => void;
   selectedTransaction?: Transaction | null;
+  onUpdateTransaction?: (id: string, updates: Partial<Transaction>) => Promise<void>;
 }
 
 const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
@@ -19,9 +20,29 @@ const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
   categories,
   isMobile,
   onClose,
-  selectedTransaction
+  selectedTransaction,
+  onUpdateTransaction
 }) => {
   const [type, setType] = useState<TransactionType>('expense');
+  const [isEditingMemo, setIsEditingMemo] = useState(false);
+  const [editingMemoText, setEditingMemoText] = useState(selectedTransaction?.memo || '');
+
+  // Update editing memo text when selected transaction changes
+  React.useEffect(() => {
+    setEditingMemoText(selectedTransaction?.memo || '');
+    setIsEditingMemo(false);
+  }, [selectedTransaction?.id]);
+
+  // Handle save memo
+  const handleSaveMemo = async () => {
+    if (!selectedTransaction || !onUpdateTransaction) return;
+    try {
+      await onUpdateTransaction(selectedTransaction.id, { memo: editingMemoText });
+      setIsEditingMemo(false);
+    } catch (error) {
+      console.error('Error updating memo:', error);
+    }
+  };
 
   // Helper to get date string in YYYY-MM-DD format
   const getDateString = (date: any): string => {
@@ -146,12 +167,51 @@ const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
             </div>
 
             {/* Selected Transaction Memo */}
-            {selectedTransaction && selectedTransaction.memo && (
+            {selectedTransaction && (
               <div className="mt-8 pt-6 border-t border-slate-200">
-                <h3 className="text-sm font-bold text-slate-700 mb-3">📝 메모</h3>
-                <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-700 whitespace-pre-wrap">
-                  {selectedTransaction.memo}
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-slate-700">📝 메모</h3>
+                  {!isEditingMemo && onUpdateTransaction && (
+                    <button
+                      onClick={() => setIsEditingMemo(true)}
+                      className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                  )}
                 </div>
+                {isEditingMemo ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editingMemoText}
+                      onChange={(e) => setEditingMemoText(e.target.value)}
+                      className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                      rows={4}
+                      placeholder="메모를 입력하세요..."
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveMemo}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-colors"
+                      >
+                        <Check size={16} /> 저장
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditingMemo(false);
+                          setEditingMemoText(selectedTransaction.memo || '');
+                        }}
+                        className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-200 transition-colors"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-700 whitespace-pre-wrap">
+                    {selectedTransaction.memo || '메모가 없습니다'}
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -260,12 +320,51 @@ const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
               </div>
 
               {/* Selected Transaction Memo */}
-              {selectedTransaction && selectedTransaction.memo && (
+              {selectedTransaction && (
                 <div className="mt-8 pt-6 border-t border-slate-200">
-                  <h3 className="text-sm font-bold text-slate-700 mb-3">📝 메모</h3>
-                  <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-700 whitespace-pre-wrap">
-                    {selectedTransaction.memo}
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-slate-700">📝 메모</h3>
+                    {!isEditingMemo && onUpdateTransaction && (
+                      <button
+                        onClick={() => setIsEditingMemo(true)}
+                        className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    )}
                   </div>
+                  {isEditingMemo ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingMemoText}
+                        onChange={(e) => setEditingMemoText(e.target.value)}
+                        className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                        rows={4}
+                        placeholder="메모를 입력하세요..."
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSaveMemo}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-colors"
+                        >
+                          <Check size={16} /> 저장
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsEditingMemo(false);
+                            setEditingMemoText(selectedTransaction.memo || '');
+                          }}
+                          className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-200 transition-colors"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-700 whitespace-pre-wrap">
+                      {selectedTransaction.memo || '메모가 없습니다'}
+                    </div>
+                  )}
                 </div>
               )}
             </>

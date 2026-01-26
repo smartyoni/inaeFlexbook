@@ -155,6 +155,21 @@ const Household: React.FC = () => {
     }
   };
 
+  const handleUpdateTransaction = async (id: string, updates: Partial<Transaction>) => {
+    try {
+      await firestoreService.updateTransaction(id, updates);
+      // Update local state
+      setTransactions(transactions.map(t => t.id === id ? { ...t, ...updates } : t));
+      // Update selectedTransaction if it's the one being updated
+      if (selectedTransaction?.id === id) {
+        setSelectedTransaction({ ...selectedTransaction, ...updates });
+      }
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      alert('수정 실패. 다시 시도해주세요.');
+    }
+  };
+
   return (
     <div className={`${
       isDesktop
@@ -359,6 +374,7 @@ const Household: React.FC = () => {
               categories={categories}
               isMobile={false}
               selectedTransaction={selectedTransaction}
+              onUpdateTransaction={handleUpdateTransaction}
             />
           </div>
         )}
@@ -381,6 +397,7 @@ const Household: React.FC = () => {
           isMobile={true}
           onClose={() => setShowAnalysisSheet(false)}
           selectedTransaction={selectedTransaction}
+          onUpdateTransaction={handleUpdateTransaction}
         />
       )}
 
