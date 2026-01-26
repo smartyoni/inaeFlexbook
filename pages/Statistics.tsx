@@ -141,17 +141,6 @@ const Checklist: React.FC = () => {
         </p>
       </header>
 
-      {/* Add Card Button */}
-      {cards.length < 20 && (
-        <button
-          onClick={addCard}
-          className="mb-6 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-bold flex items-center gap-2"
-        >
-          <Plus size={20} />
-          새 카드 추가
-        </button>
-      )}
-
       {/* Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card) => (
