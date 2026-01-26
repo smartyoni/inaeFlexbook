@@ -323,11 +323,11 @@ const Household: React.FC = () => {
                             <span className={`font-black text-lg ${transaction.type === 'income' ? 'text-emerald-500' : 'text-slate-800'}`}>
                               {transaction.type === 'income' ? '+' : '-'} ₩{transaction.amount.toLocaleString()}
                             </span>
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => { setEditingTransaction(transaction); setIsFormOpen(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => { setEditingTransaction(transaction); setIsFormOpen(true); }} className="p-1.5 bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors rounded-lg font-bold">
                                 <Edit2 size={14} />
                               </button>
-                              <button onClick={() => handleDelete(transaction.id)} className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors">
+                              <button onClick={() => handleDelete(transaction.id)} className="p-1.5 bg-rose-100 text-rose-600 hover:bg-rose-200 transition-colors rounded-lg font-bold">
                                 <Trash2 size={14} />
                               </button>
                             </div>
