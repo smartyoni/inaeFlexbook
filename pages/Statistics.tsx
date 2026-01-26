@@ -239,35 +239,34 @@ const Checklist: React.FC = () => {
 
             {/* Add Item Input */}
             <div className="p-3 border-t border-slate-100 flex-shrink-0 space-y-2">
-              <input
-                type="text"
-                value={newItemText[card.id] || ''}
-                onChange={(e) => setNewItemText({ ...newItemText, [card.id]: e.target.value })}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    addItemToCard(card.id, newItemText[card.id] || '');
-                  }
-                }}
-                placeholder="항목 추가..."
-                className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
               <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newItemText[card.id] || ''}
+                  onChange={(e) => setNewItemText({ ...newItemText, [card.id]: e.target.value })}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      addItemToCard(card.id, newItemText[card.id] || '');
+                    }
+                  }}
+                  placeholder="항목 추가..."
+                  className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
                 <button
                   onClick={() => addItemToCard(card.id, newItemText[card.id] || '')}
-                  className="flex-1 px-2 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors font-bold flex items-center justify-center gap-1"
+                  className="flex-shrink-0 px-2 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors font-bold flex items-center justify-center"
                 >
                   <Plus size={14} />
-                  추가
                 </button>
-                {totalItems(card.id) > 0 && completedCount(card.id) > 0 && (
-                  <button
-                    onClick={() => clearCompletedItems(card.id)}
-                    className="px-2 py-1.5 bg-slate-100 text-slate-600 text-xs rounded-lg hover:bg-slate-200 transition-colors font-bold"
-                  >
-                    정리
-                  </button>
-                )}
               </div>
+              {totalItems(card.id) > 0 && completedCount(card.id) > 0 && (
+                <button
+                  onClick={() => clearCompletedItems(card.id)}
+                  className="w-full px-2 py-1.5 bg-slate-100 text-slate-600 text-xs rounded-lg hover:bg-slate-200 transition-colors font-bold"
+                >
+                  정리
+                </button>
+              )}
             </div>
           </div>
         ))}
