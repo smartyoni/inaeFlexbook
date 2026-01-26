@@ -32,6 +32,7 @@ const bankAccountsRef = collection(db, 'bankAccounts');
 const accountBalancesRef = collection(db, 'accountBalances');
 const recurringExpensesRef = collection(db, 'recurringExpenses');
 const scheduledExpensesRef = collection(db, 'scheduledExpenses');
+const checklistCardsRef = collection(db, 'checklistCards');
 
 // Helper: Convert Firestore doc to typed object
 const docToObject = <T extends { id: string }>(doc: any): T => ({
@@ -269,4 +270,30 @@ export const getScheduledExpensesByStatus = async (status: string): Promise<Sche
   const q = query(scheduledExpensesRef, where('status', '==', status));
   const docs = await getDocs(q);
   return docs.docs.map(docToObject<ScheduledExpense>);
+};
+
+// Checklist Cards
+export const addChecklistCard = async (card: any) => {
+  const docRef = await addDoc(checklistCardsRef, {
+    ...card,
+    createdAt: Timestamp.fromDate(new Date(card.createdAt))
+  });
+  return docRef.id;
+};
+
+export const updateChecklistCard = async (id: string, card: any) => {
+  const updateData = { ...card };
+  if (card.createdAt && typeof card.createdAt === 'string') {
+    updateData.createdAt = Timestamp.fromDate(new Date(card.createdAt));
+  }
+  await updateDoc(doc(checklistCardsRef, id), updateData);
+};
+
+export const deleteChecklistCard = async (id: string) => {
+  await deleteDoc(doc(checklistCardsRef, id));
+};
+
+export const getAllChecklistCards = async (): Promise<any[]> => {
+  const docs = await getDocs(checklistCardsRef);
+  return docs.docs.map(docToObject<any>);
 };

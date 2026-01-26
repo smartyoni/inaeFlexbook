@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, CheckCircle2, Circle, Edit2, Lock, RefreshCw, FileText, MoreVertical, X } from 'lucide-react';
+import * as firestoreService from '../firestore-service';
 
 interface ChecklistItem {
   id: string;
@@ -29,17 +30,73 @@ const Checklist: React.FC = () => {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
 
-  // Load from localStorage
+  // Load from Firebase on mount
   useEffect(() => {
-    const saved = localStorage.getItem('checklistCards');
-    if (saved) {
-      setCards(JSON.parse(saved));
-    }
+    const loadCards = async () => {
+      try {
+        const firebaseCards = await firestoreService.getAllChecklistCards();
+        if (firebaseCards.length > 0) {
+          setCards(firebaseCards);
+        } else {
+          // Fallback to localStorage if no firebase data
+          const saved = localStorage.getItem('checklistCards');
+          if (saved) {
+            setCards(JSON.parse(saved));
+          }
+        }
+      } catch (error) {
+        console.error('Error loading checklist cards from Firebase:', error);
+        // Fallback to localStorage
+        const saved = localStorage.getItem('checklistCards');
+        if (saved) {
+          setCards(JSON.parse(saved));
+        }
+      }
+    };
+    loadCards();
   }, []);
 
-  // Save to localStorage
+  // Save to Firebase and localStorage whenever cards change
   useEffect(() => {
-    localStorage.setItem('checklistCards', JSON.stringify(cards));
+    const saveCards = async () => {
+      // Save to localStorage as backup
+      localStorage.setItem('checklistCards', JSON.stringify(cards));
+
+      // Save each card to Firebase
+      try {
+        const firebaseCards = await firestoreService.getAllChecklistCards();
+        const firebaseIds = firebaseCards.map(c => c.id);
+        const localIds = cards.map(c => c.id);
+
+        // Delete cards that no longer exist locally
+        for (const id of firebaseIds) {
+          if (!localIds.includes(id)) {
+            await firestoreService.deleteChecklistCard(id);
+          }
+        }
+
+        // Add or update cards
+        for (const card of cards) {
+          const exists = firebaseCards.find(fc => fc.id === card.id);
+          if (exists) {
+            // Update existing card
+            await firestoreService.updateChecklistCard(card.id, card);
+          } else {
+            // Add new card
+            await firestoreService.addChecklistCard(card);
+          }
+        }
+      } catch (error) {
+        console.error('Error saving checklist cards to Firebase:', error);
+      }
+    };
+
+    // Debounce the save operation to avoid too many updates
+    const timeout = setTimeout(() => {
+      saveCards();
+    }, 1000);
+
+    return () => clearTimeout(timeout);
   }, [cards]);
 
   const addCard = () => {
