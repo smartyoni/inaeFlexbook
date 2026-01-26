@@ -385,7 +385,13 @@ const Checklist: React.FC = () => {
                           </span>
                         )}
                         {item.memo && (
-                          <div className="text-[10px] text-emerald-600 bg-emerald-50 p-1.5 rounded mt-1 line-clamp-1">
+                          <div
+                            onClick={() => {
+                              setEditingItemMemoId(item.id);
+                              setEditingItemMemoText(item.memo || '');
+                            }}
+                            className="text-[10px] text-emerald-600 bg-emerald-50 p-1.5 rounded mt-1 line-clamp-1 cursor-pointer hover:bg-emerald-100 transition-colors"
+                          >
                             {item.memo}
                           </div>
                         )}
