@@ -470,17 +470,16 @@ const Checklist: React.FC = () => {
               {/* Item Memo Modal */}
               {editingItemMemoId && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
-                  <div className="bg-white rounded-2xl p-4 shadow-2xl w-full max-w-sm">
-                    <h3 className="font-bold text-slate-800 mb-3">항목 메모</h3>
+                  <div className="bg-white rounded-2xl p-4 shadow-2xl w-full max-w-2xl h-[70vh] flex flex-col">
+                    <h3 className="font-bold text-slate-800 mb-3 flex-shrink-0">항목 메모</h3>
                     <textarea
                       autoFocus
                       value={editingItemMemoText}
                       onChange={(e) => setEditingItemMemoText(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                      rows={3}
+                      className="flex-1 px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                       placeholder="메모를 입력하세요..."
                     />
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex gap-2 mt-3 flex-shrink-0">
                       <button
                         onClick={() => {
                           const cardId = cards.find(c => c.items.find(i => i.id === editingItemMemoId))?.id;
