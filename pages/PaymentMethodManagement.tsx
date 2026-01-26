@@ -155,9 +155,9 @@ const PaymentMethodManagement: React.FC = () => {
         })}
       </div>
 
-      <button 
+      <button
         onClick={handleOpenAdd}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-200 text-white flex items-center justify-center hover:bg-indigo-700 active:scale-90 transition-all z-40"
+        className="fixed bottom-24 md:bottom-6 right-6 w-14 h-14 bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-200 text-white flex items-center justify-center hover:bg-indigo-700 active:scale-90 transition-all z-40"
       >
         <Plus size={28} strokeWidth={3} />
       </button>

@@ -37,28 +37,71 @@ const Navigation = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 px-4 py-2 flex justify-around items-center z-50" style={{ backgroundColor: 'var(--notion-bg)', borderTop: '1px solid var(--notion-border)' }}>
-      {navItems.map((item) => (
-        <Link
-          key={item.path}
-          to={item.path}
-          className={`flex flex-col items-center gap-1 transition-colors`}
-          style={{
-            color: isActive(item.path) ? 'var(--notion-blue)' : 'var(--notion-text-tertiary)',
-          }}
-        >
-          <item.icon size={20} strokeWidth={isActive(item.path) ? 2.5 : 2} />
-          <span className="text-[10px] font-medium">{item.label}</span>
-        </Link>
-      ))}
-    </nav>
+    <>
+      {/* 데스크톱 사이드바 (768px 이상) */}
+      <nav
+        className="hidden md:flex md:fixed md:left-0 md:top-0 md:h-screen md:w-60 md:flex-col md:gap-2 md:p-4 md:border-r z-40"
+        style={{
+          backgroundColor: 'var(--notion-bg)',
+          borderColor: 'var(--notion-border)'
+        }}
+      >
+        {/* 로고/타이틀 */}
+        <div className="mb-6 px-3 pt-2">
+          <h1 className="text-xl font-black text-slate-800">FlexBook</h1>
+          <p className="text-xs text-slate-400 font-medium">가계부</p>
+        </div>
+
+        {/* 네비게이션 항목들 */}
+        {navItems.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+              isActive(item.path)
+                ? 'bg-indigo-50 font-bold'
+                : 'hover:bg-slate-50'
+            }`}
+            style={{
+              color: isActive(item.path) ? 'var(--notion-blue)' : 'var(--notion-text-secondary)',
+            }}
+          >
+            <item.icon size={20} strokeWidth={isActive(item.path) ? 2.5 : 2} />
+            <span className="text-sm">{item.label}</span>
+          </Link>
+        ))}
+      </nav>
+
+      {/* 모바일 하단 탭 (768px 이하) */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 px-4 py-2 flex justify-around items-center z-50"
+        style={{
+          backgroundColor: 'var(--notion-bg)',
+          borderTop: '1px solid var(--notion-border)'
+        }}
+      >
+        {navItems.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className="flex flex-col items-center gap-1 transition-colors"
+            style={{
+              color: isActive(item.path) ? 'var(--notion-blue)' : 'var(--notion-text-tertiary)',
+            }}
+          >
+            <item.icon size={20} strokeWidth={isActive(item.path) ? 2.5 : 2} />
+            <span className="text-[10px] font-medium">{item.label}</span>
+          </Link>
+        ))}
+      </nav>
+    </>
   );
 };
 
 const App: React.FC = () => {
   return (
     <Router>
-      <div className="min-h-screen pb-20" style={{ backgroundColor: 'var(--notion-bg-secondary)' }}>
+      <div className="min-h-screen pb-20 md:pb-0 md:pl-60" style={{ backgroundColor: 'var(--notion-bg-secondary)' }}>
         <Routes>
           <Route path="/" element={<Household />} />
           <Route path="/analysis" element={<CategoryAnalysis />} />
