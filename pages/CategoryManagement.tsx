@@ -107,10 +107,12 @@ const CategoryManagement: React.FC = () => {
   const handleDrop = async (e: React.DragEvent, targetCategoryId: string) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('Drop event triggered', { draggedCategoryId, targetCategoryId });
 
     const sourceId = draggedCategoryId;
 
     if (!sourceId || sourceId === targetCategoryId) {
+      console.log('Drop cancelled - same id or no source', { sourceId, targetCategoryId });
       setDraggedCategoryId(null);
       return;
     }
@@ -118,7 +120,10 @@ const CategoryManagement: React.FC = () => {
     const sourceCat = categories.find(c => c.id === sourceId);
     const targetCat = categories.find(c => c.id === targetCategoryId);
 
+    console.log('Categories found', { sourceCat: sourceCat?.name, targetCat: targetCat?.name });
+
     if (!sourceCat || !targetCat || sourceCat.type !== targetCat.type) {
+      console.log('Drop cancelled - invalid categories or type mismatch');
       setDraggedCategoryId(null);
       return;
     }
@@ -128,7 +133,10 @@ const CategoryManagement: React.FC = () => {
     const sourceIdx = sameType.findIndex(c => c.id === sourceId);
     const targetIdx = sameType.findIndex(c => c.id === targetCategoryId);
 
+    console.log('Indices', { sourceIdx, targetIdx, sameTypeLength: sameType.length });
+
     if (sourceIdx === -1 || targetIdx === -1) {
+      console.log('Drop cancelled - indices not found');
       setDraggedCategoryId(null);
       return;
     }
@@ -137,14 +145,17 @@ const CategoryManagement: React.FC = () => {
     const newSameType = [...sameType];
     [newSameType[sourceIdx], newSameType[targetIdx]] = [newSameType[targetIdx], newSameType[sourceIdx]];
 
-    // Update order field
-    newSameType.forEach((cat, idx) => {
-      cat.order = idx;
-    });
+    // Update order field - create new objects
+    const orderedSameType = newSameType.map((cat, idx) => ({
+      ...cat,
+      order: idx
+    }));
+
+    console.log('New order:', orderedSameType.map(c => ({ name: c.name, order: c.order })));
 
     // Update full categories list
     const newCategories = categories.map(cat => {
-      const updated = newSameType.find(c => c.id === cat.id);
+      const updated = orderedSameType.find(c => c.id === cat.id);
       return updated || cat;
     });
 
@@ -153,12 +164,10 @@ const CategoryManagement: React.FC = () => {
 
     // Save to Firestore
     try {
-      for (const cat of newSameType) {
-        await firestoreService.updateCategory(cat.id, {
-          ...cat,
-          order: cat.order
-        });
+      for (const cat of orderedSameType) {
+        await firestoreService.updateCategory(cat.id, cat);
       }
+      console.log('Successfully updated order in Firestore');
     } catch (error) {
       console.error('Error updating order:', error);
       await fetchCategories();
@@ -184,7 +193,9 @@ const CategoryManagement: React.FC = () => {
       <div className="space-y-6">
         {/* Sections for Expense and Income */}
         {(['expense', 'income'] as TransactionType[]).map((sectionType) => {
-          const filtered = categories.filter(c => c.type === sectionType);
+          const filtered = categories
+            .filter(c => c.type === sectionType)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
           return (
             <div key={sectionType} className="space-y-3">
               <h3 className="px-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
