@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Edit2, Lock, RefreshCw, FileText, MoreVertical, X, GripVertical } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, Edit2, Lock, RefreshCw, FileText, MoreVertical, X } from 'lucide-react';
 
 interface ChecklistItem {
   id: string;
@@ -285,7 +285,6 @@ const Checklist: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-start gap-2">
-                      <GripVertical size={12} className="flex-shrink-0 text-slate-300 mt-0.5" />
                       <button
                         onClick={() => toggleItemCompletion(card.id, item.id)}
                         className="flex-shrink-0 mt-0.5 text-slate-400 hover:text-indigo-600 transition-colors"
