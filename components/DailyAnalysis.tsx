@@ -2,12 +2,15 @@
 import React, { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { X, PieChart as PieIcon, Edit2, Check } from 'lucide-react';
-import { Transaction, Category, TransactionType } from '../types';
+import { Transaction, Category, PaymentMethod, TransactionType } from '../types';
+
+type AnalysisBy = 'category' | 'paymentMethod';
 
 interface DailyAnalysisProps {
   selectedDate: string; // YYYY-MM-DD format
   transactions: Transaction[];
   categories: Record<string, Category>;
+  paymentMethods: Record<string, PaymentMethod>;
   isMobile: boolean;
   onClose?: () => void;
   selectedTransaction?: Transaction | null;
@@ -18,12 +21,14 @@ const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
   selectedDate,
   transactions,
   categories,
+  paymentMethods,
   isMobile,
   onClose,
   selectedTransaction,
   onUpdateTransaction
 }) => {
   const [type, setType] = useState<TransactionType>('expense');
+  const [analysisBy, setAnalysisBy] = useState<AnalysisBy>('category');
   const [isEditingMemo, setIsEditingMemo] = useState(false);
   const [editingMemoText, setEditingMemoText] = useState(selectedTransaction?.memo || '');
 
@@ -61,25 +66,47 @@ const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
       return txDate === selectedDate && t.type === type;
     });
 
-    // Group by category
     const grouping: Record<string, number> = {};
-    dailyTransactions.forEach(t => {
-      const catName = categories[t.category]?.name || '미지정';
-      grouping[catName] = (grouping[catName] || 0) + t.amount;
-    });
+    let data: Array<{ name: string; value: number; color: string }> = [];
 
-    // Create chart data
-    const data = Object.entries(grouping)
-      .map(([name, value]) => ({
-        name,
-        value,
-        color:
-          Object.values(categories).find(c => c.name === name)?.color || '#cbd5e1'
-      }))
-      .sort((a, b) => b.value - a.value);
+    if (analysisBy === 'category') {
+      // Group by category
+      dailyTransactions.forEach(t => {
+        const catName = categories[t.category]?.name || '미지정';
+        grouping[catName] = (grouping[catName] || 0) + t.amount;
+      });
+
+      // Create chart data
+      data = Object.entries(grouping)
+        .map(([name, value]) => ({
+          name,
+          value,
+          color:
+            Object.values(categories).find(c => c.name === name)?.color || '#cbd5e1'
+        }))
+        .sort((a, b) => b.value - a.value);
+    } else {
+      // Group by payment method
+      dailyTransactions.forEach(t => {
+        if (t.paymentMethodId) {
+          const methodName = paymentMethods[t.paymentMethodId]?.name || '미지정';
+          grouping[methodName] = (grouping[methodName] || 0) + t.amount;
+        }
+      });
+
+      // Create chart data
+      data = Object.entries(grouping)
+        .map(([name, value]) => ({
+          name,
+          value,
+          color:
+            Object.values(paymentMethods).find(m => m.name === name)?.color || '#cbd5e1'
+        }))
+        .sort((a, b) => b.value - a.value);
+    }
 
     return data;
-  }, [selectedDate, transactions, type, categories]);
+  }, [selectedDate, transactions, type, categories, paymentMethods, analysisBy]);
 
   // Format selected date for display
   const formatDate = (dateStr: string) => {
@@ -101,7 +128,7 @@ const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
         <h2 className="text-lg font-bold text-slate-800 mb-6">{formatDate(selectedDate)}</h2>
 
         {/* Type Toggle */}
-        <div className="flex bg-slate-100 p-1 rounded-xl mb-8">
+        <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
           <button
             onClick={() => setType('expense')}
             className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
@@ -117,6 +144,26 @@ const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
             }`}
           >
             수입 분석
+          </button>
+        </div>
+
+        {/* Analysis Target Selection */}
+        <div className="flex bg-slate-100 p-1 rounded-xl mb-8">
+          <button
+            onClick={() => setAnalysisBy('category')}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+              analysisBy === 'category' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'
+            }`}
+          >
+            {type === 'expense' ? '구매처' : '수입원'}
+          </button>
+          <button
+            onClick={() => setAnalysisBy('paymentMethod')}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+              analysisBy === 'paymentMethod' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'
+            }`}
+          >
+            {type === 'expense' ? '결제수단' : '입금방법'}
           </button>
         </div>
 
@@ -254,7 +301,7 @@ const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
           </div>
 
           {/* Type Toggle */}
-          <div className="flex bg-slate-100 p-1 rounded-xl mb-8">
+          <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
             <button
               onClick={() => setType('expense')}
               className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
@@ -270,6 +317,26 @@ const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
               }`}
             >
               수입 분석
+            </button>
+          </div>
+
+          {/* Analysis Target Selection */}
+          <div className="flex bg-slate-100 p-1 rounded-xl mb-8">
+            <button
+              onClick={() => setAnalysisBy('category')}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                analysisBy === 'category' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              {type === 'expense' ? '구매처' : '수입원'}
+            </button>
+            <button
+              onClick={() => setAnalysisBy('paymentMethod')}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                analysisBy === 'paymentMethod' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              {type === 'expense' ? '결제수단' : '입금방법'}
             </button>
           </div>
 

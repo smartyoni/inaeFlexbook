@@ -2,15 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import * as firestoreService from '../firestore-service';
-import { Transaction, Category, TransactionType } from '../types';
+import { Transaction, Category, PaymentMethod, TransactionType } from '../types';
 import { ChevronLeft, ChevronRight, PieChart as PieIcon } from 'lucide-react';
 
 type AnalysisMode = 'monthly' | 'custom';
+type AnalysisBy = 'category' | 'paymentMethod';
 
 const CategoryAnalysis: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [type, setType] = useState<TransactionType>('expense');
   const [mode, setMode] = useState<AnalysisMode>('monthly');
+  const [analysisBy, setAnalysisBy] = useState<AnalysisBy>('category');
   const [customStartDate, setCustomStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
   const [customEndDate, setCustomEndDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]);
   const [data, setData] = useState<{ name: string; value: number; color: string }[]>([]);
@@ -31,42 +33,83 @@ const CategoryAnalysis: React.FC = () => {
       const transactions = await firestoreService.getTransactionsByDateRange(startDate, endDate);
       const filteredTransactions = transactions.filter(t => t.type === type);
 
-      const categories = await firestoreService.getAllCategories();
-      const catsMap: Record<string, Category> = {};
-      categories.forEach(c => catsMap[c.id] = c);
+      let chartData: { name: string; value: number; color: string }[] = [];
 
-      const grouping: Record<string, number> = {};
-      filteredTransactions.forEach(t => {
-        const catName = catsMap[t.category]?.name || '미지정';
-        grouping[catName] = (grouping[catName] || 0) + t.amount;
-      });
+      if (analysisBy === 'category') {
+        const categories = await firestoreService.getAllCategories();
+        const catsMap: Record<string, Category> = {};
+        categories.forEach(c => catsMap[c.id] = c);
 
-      const chartData = Object.entries(grouping).map(([name, value]) => ({
-        name,
-        value,
-        color: categories.find(c => c.name === name)?.color || '#cbd5e1'
-      })).sort((a, b) => b.value - a.value);
+        const grouping: Record<string, number> = {};
+        filteredTransactions.forEach(t => {
+          const catName = catsMap[t.category]?.name || '미지정';
+          grouping[catName] = (grouping[catName] || 0) + t.amount;
+        });
+
+        chartData = Object.entries(grouping).map(([name, value]) => ({
+          name,
+          value,
+          color: categories.find(c => c.name === name)?.color || '#cbd5e1'
+        })).sort((a, b) => b.value - a.value);
+      } else {
+        // analysisBy === 'paymentMethod'
+        const paymentMethods = await firestoreService.getAllPaymentMethods();
+        const methodsMap: Record<string, PaymentMethod> = {};
+        paymentMethods.forEach(m => methodsMap[m.id] = m);
+
+        const grouping: Record<string, number> = {};
+        filteredTransactions.forEach(t => {
+          if (t.paymentMethodId) {
+            const methodName = methodsMap[t.paymentMethodId]?.name || '미지정';
+            grouping[methodName] = (grouping[methodName] || 0) + t.amount;
+          }
+        });
+
+        chartData = Object.entries(grouping).map(([name, value]) => ({
+          name,
+          value,
+          color: Object.values(methodsMap).find(m => m.name === name)?.color || '#cbd5e1'
+        })).sort((a, b) => b.value - a.value);
+      }
 
       setData(chartData);
     } catch (error) {
-      console.error('Error fetching category analysis:', error);
+      console.error('Error fetching analysis:', error);
     }
   };
 
   useEffect(() => {
     fetchData();
-  }, [currentDate, type, mode, customStartDate, customEndDate]);
+  }, [currentDate, type, mode, customStartDate, customEndDate, analysisBy]);
 
   const changeMonth = (offset: number) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
+  };
+
+  const getHeaderTitle = () => {
+    if (type === 'expense') {
+      return analysisBy === 'category' ? '구매처 분석' : '결제수단 분석';
+    } else {
+      return analysisBy === 'category' ? '수입원 분석' : '입금방법 분석';
+    }
+  };
+
+  const getAnalysisLabel = () => {
+    if (type === 'expense') {
+      return analysisBy === 'category' ? '구매처' : '결제수단';
+    } else {
+      return analysisBy === 'category' ? '수입원' : '입금방법';
+    }
   };
 
   return (
     <div className="max-w-xl mx-auto px-4 pt-6 pb-12">
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">구매처 분석</h1>
-          <p className="text-sm text-slate-400 font-medium">소비 패턴 파악하기</p>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">{getHeaderTitle()}</h1>
+          <p className="text-sm text-slate-400 font-medium">
+            {type === 'expense' ? '소비 패턴 파악하기' : '수입 구성 파악하기'}
+          </p>
         </div>
       </header>
 
@@ -140,7 +183,7 @@ const CategoryAnalysis: React.FC = () => {
       )}
 
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-6">
-        <div className="flex bg-slate-100 p-1 rounded-xl mb-8">
+        <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
           <button
             onClick={() => setType('expense')}
             className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
@@ -156,6 +199,26 @@ const CategoryAnalysis: React.FC = () => {
             }`}
           >
             수입 분석
+          </button>
+        </div>
+
+        {/* Analysis Target Selection */}
+        <div className="flex bg-slate-100 p-1 rounded-xl mb-8">
+          <button
+            onClick={() => setAnalysisBy('category')}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+              analysisBy === 'category' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'
+            }`}
+          >
+            {type === 'expense' ? '구매처' : '수입원'}
+          </button>
+          <button
+            onClick={() => setAnalysisBy('paymentMethod')}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+              analysisBy === 'paymentMethod' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'
+            }`}
+          >
+            {type === 'expense' ? '결제수단' : '입금방법'}
           </button>
         </div>
 
@@ -202,7 +265,13 @@ const CategoryAnalysis: React.FC = () => {
         ) : (
           <div className="h-64 flex flex-col items-center justify-center text-slate-300">
             <PieIcon size={48} className="mb-4 opacity-20" />
-            <p className="font-bold">데이터가 부족합니다</p>
+            <p className="font-bold">
+              {analysisBy === 'paymentMethod' && type === 'expense'
+                ? '결제수단이 등록된 지출내역이 없습니다'
+                : analysisBy === 'paymentMethod' && type === 'income'
+                ? '입금방법이 등록된 수입내역이 없습니다'
+                : `${type === 'expense' ? '지출' : '수입'}이 없습니다`}
+            </p>
           </div>
         )}
       </div>

@@ -372,6 +372,7 @@ const Household: React.FC = () => {
               selectedDate={selectedDate}
               transactions={transactions}
               categories={categories}
+              paymentMethods={paymentMethods}
               isMobile={false}
               selectedTransaction={selectedTransaction}
               onUpdateTransaction={handleUpdateTransaction}
@@ -394,6 +395,7 @@ const Household: React.FC = () => {
           selectedDate={selectedDate}
           transactions={transactions}
           categories={categories}
+          paymentMethods={paymentMethods}
           isMobile={true}
           onClose={() => setShowAnalysisSheet(false)}
           selectedTransaction={selectedTransaction}
