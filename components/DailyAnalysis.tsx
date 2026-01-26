@@ -32,10 +32,14 @@ const DailyAnalysis: React.FC<DailyAnalysisProps> = ({
   const [isEditingMemo, setIsEditingMemo] = useState(false);
   const [editingMemoText, setEditingMemoText] = useState(selectedTransaction?.memo || '');
 
-  // Update editing memo text when selected transaction changes
+  // Update editing memo text and type when selected transaction changes
   React.useEffect(() => {
     setEditingMemoText(selectedTransaction?.memo || '');
     setIsEditingMemo(false);
+    if (selectedTransaction) {
+      setType(selectedTransaction.type);
+      setAnalysisBy('category');
+    }
   }, [selectedTransaction?.id]);
 
   // Handle save memo
