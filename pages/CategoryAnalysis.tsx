@@ -5,17 +5,30 @@ import * as firestoreService from '../firestore-service';
 import { Transaction, Category, TransactionType } from '../types';
 import { ChevronLeft, ChevronRight, PieChart as PieIcon } from 'lucide-react';
 
+type AnalysisMode = 'monthly' | 'custom';
+
 const CategoryAnalysis: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [type, setType] = useState<TransactionType>('expense');
+  const [mode, setMode] = useState<AnalysisMode>('monthly');
+  const [customStartDate, setCustomStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  const [customEndDate, setCustomEndDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]);
   const [data, setData] = useState<{ name: string; value: number; color: string }[]>([]);
 
   const fetchData = async () => {
     try {
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
-      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
+      let startDate: string;
+      let endDate: string;
 
-      const transactions = await firestoreService.getTransactionsByDateRange(startOfMonth, endOfMonth);
+      if (mode === 'monthly') {
+        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
+        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
+      } else {
+        startDate = new Date(customStartDate + 'T00:00:00').toISOString();
+        endDate = new Date(customEndDate + 'T23:59:59').toISOString();
+      }
+
+      const transactions = await firestoreService.getTransactionsByDateRange(startDate, endDate);
       const filteredTransactions = transactions.filter(t => t.type === type);
 
       const categories = await firestoreService.getAllCategories();
@@ -42,7 +55,7 @@ const CategoryAnalysis: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [currentDate, type]);
+  }, [currentDate, type, mode, customStartDate, customEndDate]);
 
   const changeMonth = (offset: number) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
@@ -55,18 +68,76 @@ const CategoryAnalysis: React.FC = () => {
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">구매처 분석</h1>
           <p className="text-sm text-slate-400 font-medium">소비 패턴 파악하기</p>
         </div>
-        <div className="flex items-center gap-4 bg-white p-1 rounded-full shadow-sm border border-slate-100">
-          <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-50 rounded-full text-slate-400">
+      </header>
+
+      {/* Mode Tabs */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setMode('monthly')}
+          className={`flex-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+            mode === 'monthly'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          월별
+        </button>
+        <button
+          onClick={() => setMode('custom')}
+          className={`flex-1 px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+            mode === 'custom'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          기간설정
+        </button>
+      </div>
+
+      {/* Month Selector (Monthly Mode) */}
+      {mode === 'monthly' && (
+        <div className="flex items-center justify-center gap-4 bg-white p-3 rounded-2xl shadow-sm border border-slate-100 mb-6">
+          <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-50 rounded-lg text-slate-400">
             <ChevronLeft size={20} />
           </button>
           <span className="font-bold text-slate-700 min-w-[100px] text-center">
-            {currentDate.getMonth() + 1}월
+            {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
           </span>
-          <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-50 rounded-full text-slate-400">
+          <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-50 rounded-lg text-slate-400">
             <ChevronRight size={20} />
           </button>
         </div>
-      </header>
+      )}
+
+      {/* Date Range Picker (Custom Mode) */}
+      {mode === 'custom' && (
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6">
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                시작일
+              </label>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                종료일
+              </label>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mb-6">
         <div className="flex bg-slate-100 p-1 rounded-xl mb-8">
