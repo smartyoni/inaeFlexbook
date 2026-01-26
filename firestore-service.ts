@@ -64,21 +64,23 @@ export const getTransactionsByDateRange = async (startDate: string, endDate: str
   const q = query(
     transactionsRef,
     where('date', '>=', Timestamp.fromDate(new Date(startDate))),
-    where('date', '<=', Timestamp.fromDate(new Date(endDate))),
-    orderBy('date', 'desc')
+    where('date', '<=', Timestamp.fromDate(new Date(endDate)))
   );
   const docs = await getDocs(q);
-  return docs.docs.map(docToObject<Transaction>);
+  return docs.docs
+    .map(docToObject<Transaction>)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const getTransactionsByProjectId = async (projectId: string): Promise<Transaction[]> => {
   const q = query(
     transactionsRef,
-    where('projectId', '==', projectId),
-    orderBy('date', 'desc')
+    where('projectId', '==', projectId)
   );
   const docs = await getDocs(q);
-  return docs.docs.map(docToObject<Transaction>);
+  return docs.docs
+    .map(docToObject<Transaction>)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 export const updateTransactionProjectId = async (projectId: string, newProjectId: string | null) => {
@@ -210,11 +212,12 @@ export const addAccountBalance = async (balance: Omit<AccountBalance, 'id'>) => 
 export const getAccountBalances = async (accountId: string): Promise<AccountBalance[]> => {
   const q = query(
     accountBalancesRef,
-    where('accountId', '==', accountId),
-    orderBy('timestamp', 'desc')
+    where('accountId', '==', accountId)
   );
   const docs = await getDocs(q);
-  return docs.docs.map(docToObject<AccountBalance>);
+  return docs.docs
+    .map(docToObject<AccountBalance>)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 };
 
 // Recurring Expenses
