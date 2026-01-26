@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import {
   Home,
-  BarChart3,
+  CheckSquare2,
   Settings,
   Briefcase,
   Plus,
@@ -32,7 +32,7 @@ const Navigation = () => {
     { path: '/', label: '내역', icon: Home },
     { path: '/projects', label: '프로젝트', icon: Briefcase },
     { path: '/analysis', label: '분석', icon: PieChart },
-    { path: '/statistics', label: '통계', icon: BarChart3 },
+    { path: '/statistics', label: '체크리스트', icon: CheckSquare2 },
     { path: '/settings', label: '설정', icon: Settings },
   ];
 
