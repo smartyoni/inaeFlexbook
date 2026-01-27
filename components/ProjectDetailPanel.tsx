@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowUpRight, ArrowDownRight, Trash2, Edit2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Trash2, Edit2, Lock, LockOpen } from 'lucide-react';
 import { Project, Transaction, Category, PaymentMethod } from '../types';
 
 interface ProjectDetailPanelProps {
@@ -11,6 +11,7 @@ interface ProjectDetailPanelProps {
   onClose?: () => void;
   onDelete?: (projectId: string) => void;
   onUpdate?: (projectId: string, updates: Partial<Project>) => Promise<void>;
+  onToggleLock?: (projectId: string, locked: boolean) => Promise<void>;
 }
 
 const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
@@ -21,7 +22,8 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
   isMobile,
   onClose,
   onDelete,
-  onUpdate
+  onUpdate,
+  onToggleLock
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -30,6 +32,7 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
     color: project.color
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isTogglingLock, setIsTogglingLock] = useState(false);
 
   // Helper to convert Firestore Timestamp to Date
   const getDate = (date: any): Date => {
@@ -74,6 +77,20 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
     }
   };
 
+  const handleToggleLock = async () => {
+    if (!onToggleLock) return;
+
+    setIsTogglingLock(true);
+    try {
+      await onToggleLock(project.id, !project.locked);
+    } catch (error) {
+      console.error('Error toggling lock:', error);
+      alert('잠금 상태 변경에 실패했습니다.');
+    } finally {
+      setIsTogglingLock(false);
+    }
+  };
+
   // Desktop Layout
   if (!isMobile) {
     return (
@@ -86,6 +103,19 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
             {project.name[0]}
           </div>
           <div className="flex gap-2">
+            {onToggleLock && (
+              <button
+                onClick={handleToggleLock}
+                disabled={isTogglingLock}
+                className={`p-2 transition-colors disabled:opacity-50 ${
+                  project.locked
+                    ? 'text-rose-500 hover:text-rose-600'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                {project.locked ? <Lock size={20} /> : <LockOpen size={20} />}
+              </button>
+            )}
             {onUpdate && (
               <button
                 onClick={() => setIsEditModalOpen(true)}
@@ -97,7 +127,12 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
             {onDelete && (
               <button
                 onClick={handleDelete}
-                className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+                disabled={project.locked}
+                className={`p-2 transition-colors ${
+                  project.locked
+                    ? 'text-slate-200 cursor-not-allowed'
+                    : 'text-slate-400 hover:text-rose-600'
+                }`}
               >
                 <Trash2 size={20} />
               </button>
@@ -237,6 +272,19 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
               {project.name[0]}
             </div>
             <div className="flex gap-2">
+              {onToggleLock && (
+                <button
+                  onClick={handleToggleLock}
+                  disabled={isTogglingLock}
+                  className={`p-2 transition-colors disabled:opacity-50 ${
+                    project.locked
+                      ? 'text-rose-500 hover:text-rose-600'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  {project.locked ? <Lock size={20} /> : <LockOpen size={20} />}
+                </button>
+              )}
               {onUpdate && (
                 <button
                   onClick={() => setIsEditModalOpen(true)}
@@ -248,7 +296,12 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
               {onDelete && (
                 <button
                   onClick={handleDelete}
-                  className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+                  disabled={project.locked}
+                  className={`p-2 transition-colors ${
+                    project.locked
+                      ? 'text-slate-200 cursor-not-allowed'
+                      : 'text-slate-400 hover:text-rose-600'
+                  }`}
                 >
                   <Trash2 size={20} />
                 </button>

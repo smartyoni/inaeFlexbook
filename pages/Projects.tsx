@@ -114,6 +114,29 @@ const Projects: React.FC = () => {
     }
   };
 
+  const handleToggleLock = async (projectId: string, locked: boolean) => {
+    try {
+      await firestoreService.updateProject(projectId, {
+        locked,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
+      const updatedProjects = projects.map(p =>
+        p.id === projectId ? { ...p, locked } : p
+      );
+      setProjects(updatedProjects);
+
+      // Update selected project
+      if (selectedProject && selectedProject.id === projectId) {
+        setSelectedProject({ ...selectedProject, locked });
+      }
+    } catch (error) {
+      console.error('Error toggling lock:', error);
+      throw error;
+    }
+  };
+
   const handleDeleteProject = async (projectId: string) => {
     if (!confirm('프로젝트와 관련된 모든 기록 연결이 해제됩니다. 정말 삭제하시겠습니까?')) return;
 
@@ -241,6 +264,7 @@ const Projects: React.FC = () => {
               paymentMethods={paymentMethods}
               isMobile={false}
               onUpdate={handleUpdateProject}
+              onToggleLock={handleToggleLock}
               onDelete={handleDeleteProject}
             />
           </div>
@@ -257,6 +281,7 @@ const Projects: React.FC = () => {
           isMobile={true}
           onClose={() => setShowDetailSheet(false)}
           onUpdate={handleUpdateProject}
+          onToggleLock={handleToggleLock}
           onDelete={handleDeleteProject}
         />
       )}

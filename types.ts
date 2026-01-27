@@ -25,6 +25,7 @@ export interface Project {
   color: string;
   icon?: string;
   status: 'active' | 'completed' | 'archived';
+  locked?: boolean;
   createdAt: string;
   updatedAt: string;
 }
