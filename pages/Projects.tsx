@@ -94,6 +94,26 @@ const Projects: React.FC = () => {
     }
   };
 
+  const handleUpdateProject = async (projectId: string, updates: Partial<Project>) => {
+    try {
+      await firestoreService.updateProject(projectId, updates);
+
+      // Update local state
+      const updatedProjects = projects.map(p =>
+        p.id === projectId ? { ...p, ...updates } : p
+      );
+      setProjects(updatedProjects);
+
+      // Update selected project
+      if (selectedProject && selectedProject.id === projectId) {
+        setSelectedProject({ ...selectedProject, ...updates });
+      }
+    } catch (error) {
+      console.error('Error updating project:', error);
+      throw error;
+    }
+  };
+
   const handleDeleteProject = async (projectId: string) => {
     if (!confirm('프로젝트와 관련된 모든 기록 연결이 해제됩니다. 정말 삭제하시겠습니까?')) return;
 
@@ -220,6 +240,7 @@ const Projects: React.FC = () => {
               categories={categories}
               paymentMethods={paymentMethods}
               isMobile={false}
+              onUpdate={handleUpdateProject}
               onDelete={handleDeleteProject}
             />
           </div>
@@ -235,6 +256,7 @@ const Projects: React.FC = () => {
           paymentMethods={paymentMethods}
           isMobile={true}
           onClose={() => setShowDetailSheet(false)}
+          onUpdate={handleUpdateProject}
           onDelete={handleDeleteProject}
         />
       )}

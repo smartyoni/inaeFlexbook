@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowUpRight, ArrowDownRight, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowUpRight, ArrowDownRight, Trash2, Edit2 } from 'lucide-react';
 import { Project, Transaction, Category, PaymentMethod } from '../types';
 
 interface ProjectDetailPanelProps {
@@ -10,6 +10,7 @@ interface ProjectDetailPanelProps {
   isMobile: boolean;
   onClose?: () => void;
   onDelete?: (projectId: string) => void;
+  onUpdate?: (projectId: string, updates: Partial<Project>) => Promise<void>;
 }
 
 const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
@@ -19,8 +20,17 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
   paymentMethods,
   isMobile,
   onClose,
-  onDelete
+  onDelete,
+  onUpdate
 }) => {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: project.name,
+    description: project.description || '',
+    color: project.color
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+
   // Helper to convert Firestore Timestamp to Date
   const getDate = (date: any): Date => {
     if (typeof date === 'string') {
@@ -41,6 +51,29 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
     }
   };
 
+  const handleUpdateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editForm.name) return;
+
+    if (!onUpdate) return;
+
+    setIsUpdating(true);
+    try {
+      await onUpdate(project.id, {
+        name: editForm.name,
+        description: editForm.description,
+        color: editForm.color,
+        updatedAt: new Date().toISOString()
+      });
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error('Error updating project:', error);
+      alert('프로젝트 수정에 실패했습니다.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   // Desktop Layout
   if (!isMobile) {
     return (
@@ -52,14 +85,24 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
           >
             {project.name[0]}
           </div>
-          {onDelete && (
-            <button
-              onClick={handleDelete}
-              className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
-            >
-              <Trash2 size={20} />
-            </button>
-          )}
+          <div className="flex gap-2">
+            {onUpdate && (
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"
+              >
+                <Edit2 size={20} />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={handleDelete}
+                className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+              >
+                <Trash2 size={20} />
+              </button>
+            )}
+          </div>
         </div>
 
         <h1 className="text-2xl font-black text-slate-800 mb-2">{project.name}</h1>
@@ -135,14 +178,24 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
             >
               {project.name[0]}
             </div>
-            {onDelete && (
-              <button
-                onClick={handleDelete}
-                className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
-              >
-                <Trash2 size={20} />
-              </button>
-            )}
+            <div className="flex gap-2">
+              {onUpdate && (
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"
+                >
+                  <Edit2 size={20} />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={handleDelete}
+                  className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+                >
+                  <Trash2 size={20} />
+                </button>
+              )}
+            </div>
           </div>
 
           <h1 className="text-2xl font-black text-slate-800 mb-2">{project.name}</h1>
@@ -195,6 +248,64 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Edit Project Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h2 className="text-xl font-bold mb-6 text-slate-800">프로젝트 수정</h2>
+            <form onSubmit={handleUpdateProject} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">이름</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={editForm.name}
+                  onChange={e => setEditForm({...editForm, name: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="프로젝트 이름"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">설명</label>
+                <input
+                  type="text"
+                  value={editForm.description}
+                  onChange={e => setEditForm({...editForm, description: e.target.value})}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="프로젝트 설명"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">테마 색상</label>
+                <input
+                  type="color"
+                  value={editForm.color}
+                  onChange={e => setEditForm({...editForm, color: e.target.value})}
+                  className="w-full h-12 p-1 bg-white border border-slate-200 rounded-xl cursor-pointer"
+                />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  disabled={isUpdating}
+                  className="flex-1 py-3 text-slate-500 font-bold bg-slate-100 rounded-xl disabled:opacity-50"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="flex-1 py-3 text-white font-bold bg-indigo-600 rounded-xl shadow-lg shadow-indigo-100 disabled:opacity-50"
+                >
+                  {isUpdating ? '저장 중...' : '수정하기'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 };
