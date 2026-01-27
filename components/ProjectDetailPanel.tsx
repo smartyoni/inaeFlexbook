@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, Trash2, Edit2, Lock, LockOpen } from 'lucide-react';
 import { Project, Transaction, Category, PaymentMethod } from '../types';
+import TransactionForm from './TransactionForm';
 
 interface ProjectDetailPanelProps {
   project: Project;
@@ -12,6 +13,7 @@ interface ProjectDetailPanelProps {
   onDelete?: (projectId: string) => void;
   onUpdate?: (projectId: string, updates: Partial<Project>) => Promise<void>;
   onToggleLock?: (projectId: string, locked: boolean) => Promise<void>;
+  onUpdateTransaction?: (id: string, updates: Partial<Transaction>) => Promise<void>;
 }
 
 const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
@@ -23,7 +25,8 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
   onClose,
   onDelete,
   onUpdate,
-  onToggleLock
+  onToggleLock,
+  onUpdateTransaction
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -33,6 +36,8 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [isTogglingLock, setIsTogglingLock] = useState(false);
+  const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>();
 
   // Helper to convert Firestore Timestamp to Date
   const getDate = (date: any): Date => {
@@ -172,7 +177,14 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
               const dateStr = txDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
               const timeStr = txDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
               return (
-                <div key={t.id} className="bg-white p-4 rounded-2xl border border-slate-50 shadow-sm">
+                <div
+                  key={t.id}
+                  onClick={() => {
+                    setEditingTransaction(t);
+                    setIsTransactionFormOpen(true);
+                  }}
+                  className="bg-white p-4 rounded-2xl border border-slate-50 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-bold text-slate-800 text-sm">{t.description}</h4>
                     <span className={`font-black text-sm ${t.type === 'income' ? 'text-emerald-500' : 'text-slate-800'}`}>
@@ -245,6 +257,26 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
               </form>
             </div>
           </div>
+        )}
+
+        {/* Transaction Form Modal */}
+        {isTransactionFormOpen && editingTransaction && (
+          <TransactionForm
+            transaction={editingTransaction}
+            categories={categories}
+            paymentMethods={paymentMethods}
+            onClose={() => setIsTransactionFormOpen(false)}
+            onSave={async (updates) => {
+              if (onUpdateTransaction) {
+                try {
+                  await onUpdateTransaction(editingTransaction.id, updates);
+                  setIsTransactionFormOpen(false);
+                } catch (error) {
+                  console.error('Error updating transaction:', error);
+                }
+              }
+            }}
+          />
         )}
       </div>
     );
@@ -416,6 +448,26 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Transaction Form Modal (Mobile) */}
+      {isTransactionFormOpen && editingTransaction && (
+        <TransactionForm
+          transaction={editingTransaction}
+          categories={categories}
+          paymentMethods={paymentMethods}
+          onClose={() => setIsTransactionFormOpen(false)}
+          onSave={async (updates) => {
+            if (onUpdateTransaction) {
+              try {
+                await onUpdateTransaction(editingTransaction.id, updates);
+                setIsTransactionFormOpen(false);
+              } catch (error) {
+                console.error('Error updating transaction:', error);
+              }
+            }
+          }}
+        />
       )}
     </>
   );
