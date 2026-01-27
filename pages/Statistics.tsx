@@ -17,6 +17,90 @@ interface ChecklistCard {
   createdAt: string;
 }
 
+const renderTextWithLinks = (text: string): React.ReactNode => {
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+  const phoneRegex = /(01[0-9]-?\d{3,4}-?\d{4}|01[0-9]\d{7,8})/g;
+
+  let parts: (string | React.ReactNode)[] = [];
+  let lastIndex = 0;
+  const matches: Array<{type: 'url' | 'phone', match: string, index: number, endIndex: number}> = [];
+
+  // URL 매칭
+  let urlMatch;
+  const urlRegexGlobal = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+  while ((urlMatch = urlRegexGlobal.exec(text)) !== null) {
+    matches.push({
+      type: 'url',
+      match: urlMatch[0],
+      index: urlMatch.index,
+      endIndex: urlMatch.index + urlMatch[0].length
+    });
+  }
+
+  // 전화번호 매칭
+  let phoneMatch;
+  const phoneRegexGlobal = /(01[0-9]-?\d{3,4}-?\d{4}|01[0-9]\d{7,8})/g;
+  while ((phoneMatch = phoneRegexGlobal.exec(text)) !== null) {
+    matches.push({
+      type: 'phone',
+      match: phoneMatch[0],
+      index: phoneMatch.index,
+      endIndex: phoneMatch.index + phoneMatch[0].length
+    });
+  }
+
+  // 인덱스 기준으로 정렬
+  matches.sort((a, b) => a.index - b.index);
+
+  // 겹치는 매칭 제거
+  const uniqueMatches = matches.filter((match, idx) => {
+    if (idx === 0) return true;
+    const prevMatch = matches[idx - 1];
+    return match.index >= prevMatch.endIndex;
+  });
+
+  // 파트 생성
+  uniqueMatches.forEach((match, idx) => {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+
+    if (match.type === 'url') {
+      const url = match.match.startsWith('www.') ? 'https://' + match.match : match.match;
+      parts.push(
+        <a
+          key={`url-${idx}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 underline break-all"
+        >
+          {match.match}
+        </a>
+      );
+    } else if (match.type === 'phone') {
+      const phoneNumber = match.match.replace(/-/g, '');
+      parts.push(
+        <a
+          key={`phone-${idx}`}
+          href={`sms:${phoneNumber}`}
+          className="text-blue-600 hover:text-blue-800 underline break-all"
+        >
+          {match.match}
+        </a>
+      );
+    }
+
+    lastIndex = match.endIndex;
+  });
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+};
+
 const Checklist: React.FC = () => {
   const [cards, setCards] = useState<ChecklistCard[]>([]);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
@@ -293,28 +377,37 @@ const Checklist: React.FC = () => {
             {/* Card Header */}
             <div className="p-4 border-b border-slate-100 flex-shrink-0">
               {editingCardId === card.id ? (
-                <div className="flex gap-2">
-                  <input
-                    autoFocus
-                    type="text"
-                    value={editingTitle}
-                    onChange={(e) => setEditingTitle(e.target.value)}
-                    className="flex-1 px-2 py-1 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <button
-                    onClick={() => {
+                <input
+                  autoFocus
+                  type="text"
+                  value={editingTitle}
+                  onChange={(e) => setEditingTitle(e.target.value)}
+                  onBlur={() => {
+                    updateCardTitle(card.id, editingTitle);
+                    setEditingCardId(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
                       updateCardTitle(card.id, editingTitle);
                       setEditingCardId(null);
-                    }}
-                    className="px-3 py-1 bg-indigo-600 text-white text-xs rounded font-bold hover:bg-indigo-700"
-                  >
-                    저장
-                  </button>
-                </div>
+                    } else if (e.key === 'Escape') {
+                      setEditingCardId(null);
+                    }
+                  }}
+                  className="flex-1 px-2 py-1 text-sm border border-indigo-500 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-indigo-50 font-bold text-slate-800"
+                />
               ) : (
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
-                    <h3 className="font-bold text-slate-800 text-sm line-clamp-2">{card.title}</h3>
+                    <h3
+                      onDoubleClick={() => {
+                        setEditingCardId(card.id);
+                        setEditingTitle(card.title);
+                      }}
+                      className="font-bold text-slate-800 text-sm line-clamp-2 cursor-text hover:bg-indigo-50 rounded px-1 py-0.5 transition-colors"
+                    >
+                      {card.title}
+                    </h3>
                     <p className="text-xs text-slate-400 mt-1">
                       {completedCount(card.id)}/{totalItems(card.id)}
                     </p>
@@ -397,7 +490,7 @@ const Checklist: React.FC = () => {
                                 : 'text-slate-700'
                             }`}
                           >
-                            {item.text}
+                            {renderTextWithLinks(item.text)}
                           </span>
                         )}
                         {item.memo && (
@@ -408,7 +501,7 @@ const Checklist: React.FC = () => {
                             }}
                             className="text-[10px] text-emerald-600 bg-emerald-50 p-1.5 rounded mt-1 line-clamp-1 cursor-pointer hover:bg-emerald-100 transition-colors"
                           >
-                            {item.memo}
+                            {renderTextWithLinks(item.memo)}
                           </div>
                         )}
                       </div>
@@ -492,16 +585,34 @@ const Checklist: React.FC = () => {
 
               {/* Item Memo Modal */}
               {editingItemMemoId && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
-                  <div className="bg-white rounded-2xl p-4 shadow-2xl w-full max-w-2xl h-[70vh] flex flex-col">
+                <div
+                  className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]"
+                  onClick={() => setEditingItemMemoId(null)}
+                >
+                  <div
+                    className="bg-white rounded-2xl p-4 shadow-2xl w-full max-w-2xl h-[70vh] flex flex-col"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <h3 className="font-bold text-slate-800 mb-3 flex-shrink-0">항목 메모</h3>
-                    <textarea
-                      autoFocus
-                      value={editingItemMemoText}
-                      onChange={(e) => setEditingItemMemoText(e.target.value)}
-                      className="flex-1 px-2 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                      placeholder="메모를 입력하세요..."
-                    />
+                    <div className="flex-1 flex flex-col gap-3 min-h-0">
+                      <div className="flex-1 flex flex-col border border-slate-200 rounded-lg overflow-hidden">
+                        <textarea
+                          autoFocus
+                          value={editingItemMemoText}
+                          onChange={(e) => setEditingItemMemoText(e.target.value)}
+                          className="flex-1 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                          placeholder="메모를 입력하세요..."
+                        />
+                      </div>
+                      {editingItemMemoText && (
+                        <div className="border border-slate-200 rounded-lg p-2 bg-slate-50 max-h-24 overflow-y-auto">
+                          <p className="text-[10px] text-slate-500 mb-1.5">미리보기:</p>
+                          <div className="text-sm text-slate-700 break-words">
+                            {renderTextWithLinks(editingItemMemoText)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex gap-2 mt-3 flex-shrink-0">
                       <button
                         onClick={() => {
