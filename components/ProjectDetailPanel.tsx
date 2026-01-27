@@ -153,6 +153,64 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
             })
           )}
         </div>
+
+        {/* Edit Project Modal */}
+        {isEditModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+            <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+              <h2 className="text-xl font-bold mb-6 text-slate-800">프로젝트 수정</h2>
+              <form onSubmit={handleUpdateProject} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">이름</label>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={editForm.name}
+                    onChange={e => setEditForm({...editForm, name: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="프로젝트 이름"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">설명</label>
+                  <input
+                    type="text"
+                    value={editForm.description}
+                    onChange={e => setEditForm({...editForm, description: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="프로젝트 설명"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">테마 색상</label>
+                  <input
+                    type="color"
+                    value={editForm.color}
+                    onChange={e => setEditForm({...editForm, color: e.target.value})}
+                    className="w-full h-12 p-1 bg-white border border-slate-200 rounded-xl cursor-pointer"
+                  />
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    disabled={isUpdating}
+                    className="flex-1 py-3 text-slate-500 font-bold bg-slate-100 rounded-xl disabled:opacity-50"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="flex-1 py-3 text-white font-bold bg-indigo-600 rounded-xl shadow-lg shadow-indigo-100 disabled:opacity-50"
+                  >
+                    {isUpdating ? '저장 중...' : '수정하기'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
