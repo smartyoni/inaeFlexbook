@@ -14,6 +14,7 @@ interface ProjectDetailPanelProps {
   onUpdate?: (projectId: string, updates: Partial<Project>) => Promise<void>;
   onToggleLock?: (projectId: string, locked: boolean) => Promise<void>;
   onUpdateTransaction?: (id: string, updates: Partial<Transaction>) => Promise<void>;
+  onRefreshTransactions?: () => Promise<void>;
 }
 
 const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
@@ -26,7 +27,8 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
   onDelete,
   onUpdate,
   onToggleLock,
-  onUpdateTransaction
+  onUpdateTransaction,
+  onRefreshTransactions
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -262,20 +264,20 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
         {/* Transaction Form Modal */}
         {isTransactionFormOpen && editingTransaction && (
           <TransactionForm
-            transaction={editingTransaction}
-            categories={categories}
-            paymentMethods={paymentMethods}
             onClose={() => setIsTransactionFormOpen(false)}
-            onSave={async (updates) => {
-              if (onUpdateTransaction) {
+            onSave={async () => {
+              if (onRefreshTransactions) {
                 try {
-                  await onUpdateTransaction(editingTransaction.id, updates);
+                  await onRefreshTransactions();
                   setIsTransactionFormOpen(false);
                 } catch (error) {
-                  console.error('Error updating transaction:', error);
+                  console.error('Error refreshing transactions:', error);
                 }
+              } else {
+                setIsTransactionFormOpen(false);
               }
             }}
+            initialData={editingTransaction}
           />
         )}
       </div>
@@ -373,7 +375,14 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
                 const dateStr = txDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
                 const timeStr = txDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
                 return (
-                  <div key={t.id} className="bg-white p-4 rounded-2xl border border-slate-50 shadow-sm">
+                  <div
+                    key={t.id}
+                    onClick={() => {
+                      setEditingTransaction(t);
+                      setIsTransactionFormOpen(true);
+                    }}
+                    className="bg-white p-4 rounded-2xl border border-slate-50 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer"
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-bold text-slate-800 text-sm">{t.description}</h4>
                       <span className={`font-black text-sm ${t.type === 'income' ? 'text-emerald-500' : 'text-slate-800'}`}>
@@ -453,20 +462,20 @@ const ProjectDetailPanel: React.FC<ProjectDetailPanelProps> = ({
       {/* Transaction Form Modal (Mobile) */}
       {isTransactionFormOpen && editingTransaction && (
         <TransactionForm
-          transaction={editingTransaction}
-          categories={categories}
-          paymentMethods={paymentMethods}
           onClose={() => setIsTransactionFormOpen(false)}
-          onSave={async (updates) => {
-            if (onUpdateTransaction) {
+          onSave={async () => {
+            if (onRefreshTransactions) {
               try {
-                await onUpdateTransaction(editingTransaction.id, updates);
+                await onRefreshTransactions();
                 setIsTransactionFormOpen(false);
               } catch (error) {
-                console.error('Error updating transaction:', error);
+                console.error('Error refreshing transactions:', error);
               }
+            } else {
+              setIsTransactionFormOpen(false);
             }
           }}
+          initialData={editingTransaction}
         />
       )}
     </>

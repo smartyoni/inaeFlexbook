@@ -152,6 +152,22 @@ const Projects: React.FC = () => {
     }
   };
 
+  const handleRefreshProjectTransactions = async () => {
+    if (!selectedProjectId) return;
+
+    try {
+      const trans = await firestoreService.getTransactionsByProjectId(selectedProjectId);
+      const getDateForSort = (date: any): Date => {
+        if (typeof date === 'string') return new Date(date);
+        if (date && typeof date === 'object' && 'toDate' in date) return date.toDate();
+        return new Date(date);
+      };
+      setTransactions(trans.sort((a, b) => getDateForSort(b.date).getTime() - getDateForSort(a.date).getTime()));
+    } catch (error) {
+      console.error('Error refreshing transactions:', error);
+    }
+  };
+
   const handleDeleteProject = async (projectId: string) => {
     if (!confirm('프로젝트와 관련된 모든 기록 연결이 해제됩니다. 정말 삭제하시겠습니까?')) return;
 
@@ -282,6 +298,7 @@ const Projects: React.FC = () => {
               onToggleLock={handleToggleLock}
               onDelete={handleDeleteProject}
               onUpdateTransaction={handleUpdateTransaction}
+              onRefreshTransactions={handleRefreshProjectTransactions}
             />
           </div>
         )}
@@ -300,6 +317,7 @@ const Projects: React.FC = () => {
           onToggleLock={handleToggleLock}
           onDelete={handleDeleteProject}
           onUpdateTransaction={handleUpdateTransaction}
+          onRefreshTransactions={handleRefreshProjectTransactions}
         />
       )}
 
