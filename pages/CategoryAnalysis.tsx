@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import * as firestoreService from '../firestore-service';
 import { Transaction, Category, PaymentMethod, TransactionType } from '../types';
 import { ChevronLeft, ChevronRight, PieChart as PieIcon } from 'lucide-react';
+import { getMonthStartDate, getMonthEndDate, getEndOfDay } from '../dateUtils';
 
 type AnalysisMode = 'monthly' | 'custom';
 type AnalysisBy = 'category' | 'paymentMethod';
@@ -23,11 +24,11 @@ const CategoryAnalysis: React.FC = () => {
       let endDate: string;
 
       if (mode === 'monthly') {
-        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
-        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
+        startDate = getMonthStartDate(currentDate.getFullYear(), currentDate.getMonth());
+        endDate = getMonthEndDate(currentDate.getFullYear(), currentDate.getMonth());
       } else {
         startDate = new Date(customStartDate + 'T00:00:00').toISOString();
-        endDate = new Date(customEndDate + 'T23:59:59').toISOString();
+        endDate = getEndOfDay(customEndDate);
       }
 
       const transactions = await firestoreService.getTransactionsByDateRange(startDate, endDate);

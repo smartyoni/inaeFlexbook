@@ -17,6 +17,7 @@ import { Transaction, Category, TransactionType, PaymentMethod } from '../types'
 import TransactionForm from '../components/TransactionForm';
 import DailyAnalysis from '../components/DailyAnalysis';
 import * as firestoreService from '../firestore-service';
+import { getMonthStartDate, getMonthEndDate } from '../dateUtils';
 
 const Household: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -33,8 +34,8 @@ const Household: React.FC = () => {
 
   const fetchTransactions = async () => {
     try {
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
-      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString();
+      const startOfMonth = getMonthStartDate(currentDate.getFullYear(), currentDate.getMonth());
+      const endOfMonth = getMonthEndDate(currentDate.getFullYear(), currentDate.getMonth());
 
       let results = await firestoreService.getTransactionsByDateRange(startOfMonth, endOfMonth);
 

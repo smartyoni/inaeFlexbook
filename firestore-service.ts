@@ -22,6 +22,7 @@ import {
   RecurringExpense,
   ScheduledExpense
 } from './types';
+import { getMonthStartDate, getMonthEndDate, getYearStartDate, getYearEndDate } from './dateUtils';
 
 // Collections
 const transactionsRef = collection(db, 'transactions');
@@ -93,14 +94,14 @@ export const updateTransactionProjectId = async (projectId: string, newProjectId
 };
 
 export const getTransactionsByYear = async (year: number): Promise<Transaction[]> => {
-  const startOfYear = new Date(year, 0, 1).toISOString();
-  const endOfYear = new Date(year, 11, 31).toISOString();
+  const startOfYear = getYearStartDate(year);
+  const endOfYear = getYearEndDate(year);
   return getTransactionsByDateRange(startOfYear, endOfYear);
 };
 
 export const getTransactionsByMonthAndType = async (year: number, month: number, type: 'income' | 'expense'): Promise<Transaction[]> => {
-  const startOfMonth = new Date(year, month, 1).toISOString();
-  const endOfMonth = new Date(year, month + 1, 0).toISOString();
+  const startOfMonth = getMonthStartDate(year, month);
+  const endOfMonth = getMonthEndDate(year, month);
   const transactions = await getTransactionsByDateRange(startOfMonth, endOfMonth);
   return transactions.filter(t => t.type === type);
 };
